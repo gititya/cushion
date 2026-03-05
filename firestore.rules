@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: request comes from an authenticated user
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: the document's userId field matches the caller
+    function isOwner() {
+      return request.auth.uid == resource.data.userId;
+    }
+
+    // Helper: on create, the incoming userId field matches the caller
+    function isOwnerOnCreate() {
+      return request.auth.uid == request.resource.data.userId;
+    }
+
+    // All cushion_ collections follow the same pattern:
+    // - authenticated users can only read/write their own documents
+    // - userId must match on create
+    // - no cross-user access, no unauthenticated access
+
+    match /cushion_categories/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_expenses/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_income/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_recurring_items/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_investments/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_loans/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_credit_cards/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_emis/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_budgets/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    match /cushion_trips/{docId} {
+      allow read: if isAuthenticated() && isOwner();
+      allow create: if isAuthenticated() && isOwnerOnCreate();
+      allow update, delete: if isAuthenticated() && isOwner();
+    }
+
+    // Deny everything else -- no wildcards that could accidentally open other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

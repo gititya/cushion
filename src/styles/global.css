@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* M3 hero card gradient -- reuse as a utility class */
+@layer components {
+  .gradient-hero {
+    background: linear-gradient(135deg, #6750A4 0%, #7D5260 100%);
+  }
+
+  .gradient-surface {
+    background: linear-gradient(135deg, rgba(103, 80, 164, 0.08) 0%, rgba(125, 82, 96, 0.08) 100%);
+  }
+
+  .m3-surface {
+    background-color: #FFFBFE;
+    border: 1px solid rgba(103, 80, 164, 0.12);
+    border-radius: 16px;
+  }
+}
+
+/* Scrollbar -- minimal and M3-tinted */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(103, 80, 164, 0.3);
+  border-radius: 3px;
+}

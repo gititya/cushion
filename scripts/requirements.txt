@@ -1,0 +1,9 @@
+# Python dependencies for Cushion data import scripts.
+# Run all scripts inside scripts/venv:
+#   cd scripts && source venv/bin/activate && python import_data.py
+#
+# Create venv (first time):
+#   cd scripts && python3 -m venv venv
+
+firebase-admin>=6.5.0
+python-dotenv>=1.0.0

@@ -1,0 +1,4 @@
+# Firebase Cloud Functions will live here (Phase 5+).
+# Agents: monthly finance summary, recurring item watchdog, loan/investment maturity tracker.
+# Each agent = one scheduled Cloud Function.
+# See PRD Section 11 for the planned agent list.
