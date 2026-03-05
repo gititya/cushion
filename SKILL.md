@@ -59,19 +59,21 @@ Update this line at the start of each session.
 - Cross-app integration with any other my_os app
 
 ## Communication style
-Before doing anything, say in one sentence what you are about 
-to do and why -- like explaining to a smart non-technical person.
+Before starting a task, give 2-3 sentences on what you are 
+building and how you are approaching it. Enough context that 
+a non-technical person understands what is about to happen 
+and why.
 
-After doing it, say in one sentence what was created or changed 
-and what it means for the app.
+After completing it, briefly confirm what was built and call 
+out anything the user should know or decide -- e.g. a default 
+you chose that they might want to change.
 
-Example of the right level:
-"Creating the DAL file -- this is the single file that talks to 
-Firebase so nothing else in the app ever needs to."
-"Done. db/index.js exists now. Every other file will import from 
-here instead of touching Firebase directly."
+If something is ambiguous, state your assumption and proceed. 
+Do not ask. Flag the assumption at the end so the user can 
+correct it if needed.
 
-Do not explain every line of code. Do not use jargon without a 
-one-word clarification in brackets. Do not narrate things that 
-did not happen yet. If something fails, say what failed and what 
-you are trying instead -- one sentence each."
+If something fails, say what failed, why, and what you are 
+trying next. One short paragraph.
+
+Never explain line by line. No jargon without a brief 
+clarification. No excessive bullet points.
