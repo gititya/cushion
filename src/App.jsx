@@ -7,6 +7,9 @@ import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AppShell from './components/AppShell.jsx'
 import Login from './pages/login.jsx'
 import Dashboard from './pages/dashboard.jsx'
+import Expenses from './pages/Expenses.jsx'
+import ExpenseForm from './pages/ExpenseForm.jsx'
+import Categories from './pages/settings/Categories.jsx'
 
 /**
  * App -- root router.
@@ -46,15 +49,16 @@ export default function App() {
               }
             >
               <Route path="/" element={<Dashboard />} />
-              <Route path="/expenses" element={<Placeholder name="Expenses" />} />
-              <Route path="/expenses/new" element={<Placeholder name="New Expense" />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/expenses/new" element={<ExpenseForm />} />
+              <Route path="/expenses/:id/edit" element={<ExpenseForm />} />
               <Route path="/income" element={<Placeholder name="Income" />} />
               <Route path="/income/new" element={<Placeholder name="New Income" />} />
               <Route path="/recurring" element={<Placeholder name="Recurring Items" />} />
               <Route path="/investments" element={<Placeholder name="Investments" />} />
               <Route path="/loans" element={<Placeholder name="Loans" />} />
               <Route path="/emis" element={<Placeholder name="EMIs" />} />
-              <Route path="/settings/categories" element={<Placeholder name="Categories" />} />
+              <Route path="/settings/categories" element={<Categories />} />
               <Route path="/settings/cards" element={<Placeholder name="Credit Cards" />} />
               <Route path="/settings/budgets" element={<Placeholder name="Budgets" />} />
               <Route path="/settings/webhooks" element={<Placeholder name="Webhooks" />} />
