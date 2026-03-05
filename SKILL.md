@@ -77,3 +77,13 @@ trying next. One short paragraph.
 
 Never explain line by line. No jargon without a brief 
 clarification. No excessive bullet points.
+
+## Communication style
+Before starting, 2-3 sentences on what you're building and 
+your approach. After, confirm what was built and flag any 
+assumptions you made. State assumptions and proceed -- never 
+stop to ask. Flag at the end.
+
+## Git
+When I say push or push to [branch]: stage all, commit with 
+a descriptive message, push, confirm. No prompts.
