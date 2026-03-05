@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
+
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
@@ -22,24 +23,16 @@ export default function Login() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [encKey, setEncKey] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [showKey, setShowKey] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-
-    if (!encKey.trim()) {
-      setError('Encryption key is required.')
-      return
-    }
-
     try {
       setLoading(true)
-      await login(email, password, encKey)
+      await login(email, password)
       navigate('/', { replace: true })
     } catch (err) {
       setError(getErrorMessage(err.code))
@@ -120,30 +113,6 @@ export default function Login() {
                       size="small"
                     >
                       {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <TextField
-              label="Encryption key"
-              type={showKey ? 'text' : 'password'}
-              value={encKey}
-              onChange={(e) => setEncKey(e.target.value)}
-              required
-              fullWidth
-              helperText="Your personal key for encrypting financial data. Keep it safe -- it cannot be recovered."
-              autoComplete="off"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowKey((v) => !v)}
-                      edge="end"
-                      size="small"
-                    >
-                      {showKey ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </InputAdornment>
                 ),

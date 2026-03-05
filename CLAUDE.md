@@ -1,0 +1,66 @@
+# Cushion — Project Rules for Claude
+
+## What this is
+Personal finance tracker. Single user (owner only). React + Vite frontend, Firebase Auth + Firestore backend, deployed via Firebase Hosting.
+
+## Stack
+- **React 18 + Vite** — frontend
+- **MUI v5** — UI components (primary UI library, use this for everything)
+- **Tailwind CSS** — utility classes only when MUI sx prop is insufficient
+- **Firebase Auth** — authentication
+- **Firestore** — database, collections prefixed with `cushion_`
+- **React Router v6** — routing
+- **Recharts** — charts
+- **Anthropic SDK** — Claude AI integration (future use)
+
+## Architecture rules
+- `src/db/index.js` is the **only file** that imports Firebase. All Firestore reads/writes go through it.
+- Auth state lives in `src/contexts/AuthContext.jsx`. Use `useAuth()` to get `currentUser`.
+- All protected routes render inside `AppShell` via `ProtectedRoute`.
+- Pages go in `src/pages/`. Settings pages go in `src/pages/settings/`.
+
+## Security decisions
+- **No client-side encryption.** Removed intentionally. This is a personal app with no PII or PCI data. Firebase Auth + Firestore security rules scoped to UID is sufficient.
+- **No encryption key field on login.** Login is email + password only via Firebase Auth.
+- **Password management:** use a password manager with a long random password + Google 2FA on the Firebase account. No in-app password rotation needed — Firebase Console handles that.
+- If encryption is ever needed in the future, the correct approach is PBKDF2 key derivation from the login password (not a separate field), with a migration script before switching.
+
+## Firestore collections
+| Collection | Encrypted fields (none now) | Notes |
+|---|---|---|
+| `cushion_categories` | — | name, icon (emoji), color (hex), sortOrder, isActive |
+| `cushion_expenses` | — | date, amount, description, categoryId, paymentMethod, cardId, notes |
+| `cushion_income` | — | date, amount, source, notes |
+| `cushion_recurring_items` | — | name, amount, type, frequency, nextDueDate |
+| `cushion_investments` | — | name, amountInvested, currentValue, type, platform |
+| `cushion_loans` | — | person, amount, dateGiven, expectedReturnDate, isReturned |
+| `cushion_emis` | — | merchant, emiAmount, cardId, monthsRemaining, startDate |
+| `cushion_budgets` | — | categoryId, monthlyLimit, alertAt80, alertAt100 |
+| `cushion_credit_cards` | — | name, network, cashbackCategories, rewardPointsRate |
+
+## Routes
+| Route | Component | Status |
+|---|---|---|
+| `/login` | `pages/login.jsx` | Done |
+| `/` | `pages/dashboard.jsx` | Scaffold |
+| `/expenses` | `pages/Expenses.jsx` | Done |
+| `/expenses/new` | `pages/ExpenseForm.jsx` | Done |
+| `/expenses/:id/edit` | `pages/ExpenseForm.jsx` | Done |
+| `/settings/categories` | `pages/settings/Categories.jsx` | Done |
+| `/income` | — | Placeholder |
+| `/income/new` | — | Placeholder |
+| `/recurring` | — | Placeholder |
+| `/investments` | — | Placeholder |
+| `/loans` | — | Placeholder |
+| `/emis` | — | Placeholder |
+| `/settings/cards` | — | Placeholder |
+| `/settings/budgets` | — | Placeholder |
+| `/settings/webhooks` | — | Placeholder |
+| `/settings/account` | — | Placeholder |
+
+## Code style
+- Functional components only, no class components
+- Named exports for pages, default exports are fine too
+- No TypeScript — plain JS/JSX throughout
+- Keep db calls in event handlers or useEffect, never inline in JSX
+- MUI `sx` prop for styling, not inline `style` unless trivial

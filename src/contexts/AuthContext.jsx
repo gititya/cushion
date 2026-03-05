@@ -1,14 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { authAPI, setEncKey, clearEncKey } from '../db/index.js'
+import { authAPI } from '../db/index.js'
 
 /**
  * AuthContext -- provides currentUser and login/logout helpers.
- *
- * Encryption key lifecycle:
- *   - Stored in sessionStorage under 'cushion_enc_key' (see db/index.js)
- *   - Set here at login time (user provides the key alongside credentials)
- *   - Cleared here at logout time
- *   - Never persists across browser sessions (sessionStorage is tab-scoped)
  */
 
 const AuthContext = createContext(null)
@@ -25,18 +19,11 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [])
 
-  /**
-   * Sign in with email + password + encryption key.
-   * The encryption key is kept in sessionStorage for this tab session only.
-   */
-  async function login(email, password, encryptionKey) {
-    const result = await authAPI.signIn(email, password)
-    setEncKey(encryptionKey)
-    return result
+  async function login(email, password) {
+    return authAPI.signIn(email, password)
   }
 
   async function logout() {
-    clearEncKey()
     return authAPI.signOut()
   }
 

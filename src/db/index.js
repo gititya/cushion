@@ -32,8 +32,6 @@ import {
   setPersistence,
   browserLocalPersistence,
 } from 'firebase/auth'
-import CryptoJS from 'crypto-js'
-
 // ---------------------------------------------------------------------------
 // Firebase init -- config from .env.local (gitignored)
 // ---------------------------------------------------------------------------
@@ -53,46 +51,6 @@ export const auth = getAuth(app)
 
 // Persist auth session across browser closes
 setPersistence(auth, browserLocalPersistence)
-
-// ---------------------------------------------------------------------------
-// Encryption helpers
-// Keys stored in sessionStorage under 'cushion_enc_key'.
-// Set by AuthContext after the user provides their key at login.
-// ---------------------------------------------------------------------------
-
-const SESSION_KEY_NAME = 'cushion_enc_key'
-
-function getEncKey() {
-  const key = sessionStorage.getItem(SESSION_KEY_NAME)
-  if (!key) throw new Error('Encryption key not set. Please log in again.')
-  return key
-}
-
-export function setEncKey(key) {
-  sessionStorage.setItem(SESSION_KEY_NAME, key)
-}
-
-export function clearEncKey() {
-  sessionStorage.removeItem(SESSION_KEY_NAME)
-}
-
-function encrypt(value) {
-  if (value === null || value === undefined) return value
-  const key = getEncKey()
-  return CryptoJS.AES.encrypt(String(value), key).toString()
-}
-
-function decrypt(ciphertext) {
-  if (ciphertext === null || ciphertext === undefined) return ciphertext
-  const key = getEncKey()
-  const bytes = CryptoJS.AES.decrypt(ciphertext, key)
-  return bytes.toString(CryptoJS.enc.Utf8)
-}
-
-function decryptNumber(ciphertext) {
-  const raw = decrypt(ciphertext)
-  return raw !== null && raw !== undefined ? parseFloat(raw) : null
-}
 
 // ---------------------------------------------------------------------------
 // Auth API (exposed so nothing else imports firebase/auth directly)
@@ -159,34 +117,14 @@ export const categories = {
 
 // ---------------------------------------------------------------------------
 // cushion_expenses
-// Encrypted fields: amount, description, notes
 // ---------------------------------------------------------------------------
-
-function encryptExpense(data) {
-  return {
-    amount: encrypt(data.amount),
-    description: data.description ? encrypt(data.description) : null,
-    notes: data.notes ? encrypt(data.notes) : null,
-  }
-}
-
-function decryptExpense(raw) {
-  return {
-    ...raw,
-    amount: decryptNumber(raw.amount),
-    description: raw.description ? decrypt(raw.description) : null,
-    notes: raw.notes ? decrypt(raw.notes) : null,
-  }
-}
 
 export const expenses = {
   async getAll(uid) {
-    const docs = await getAll('cushion_expenses', uid, orderBy('date', 'desc'))
-    return docs.map(decryptExpense)
+    return getAll('cushion_expenses', uid, orderBy('date', 'desc'))
   },
 
   async add(uid, data) {
-    const encrypted = encryptExpense(data)
     return addDoc(collection(db, 'cushion_expenses'), {
       userId: uid,
       date: data.date,
@@ -195,20 +133,23 @@ export const expenses = {
       cardId: data.cardId ?? null,
       tripId: data.tripId ?? null,
       importedFrom: data.importedFrom ?? null,
-      ...encrypted,
+      amount: data.amount,
+      description: data.description ?? null,
+      notes: data.notes ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
   },
 
   async update(docId, data) {
-    const encrypted = encryptExpense(data)
     return updateDoc(doc(db, 'cushion_expenses', docId), {
       date: data.date,
       categoryId: data.categoryId,
       paymentMethod: data.paymentMethod,
       cardId: data.cardId ?? null,
-      ...encrypted,
+      amount: data.amount,
+      description: data.description ?? null,
+      notes: data.notes ?? null,
       updatedAt: serverTimestamp(),
     })
   },
@@ -220,49 +161,32 @@ export const expenses = {
 
 // ---------------------------------------------------------------------------
 // cushion_income
-// Encrypted fields: amount, source, notes
 // ---------------------------------------------------------------------------
-
-function encryptIncome(data) {
-  return {
-    amount: encrypt(data.amount),
-    source: encrypt(data.source),
-    notes: data.notes ? encrypt(data.notes) : null,
-  }
-}
-
-function decryptIncome(raw) {
-  return {
-    ...raw,
-    amount: decryptNumber(raw.amount),
-    source: decrypt(raw.source),
-    notes: raw.notes ? decrypt(raw.notes) : null,
-  }
-}
 
 export const income = {
   async getAll(uid) {
-    const docs = await getAll('cushion_income', uid, orderBy('date', 'desc'))
-    return docs.map(decryptIncome)
+    return getAll('cushion_income', uid, orderBy('date', 'desc'))
   },
 
   async add(uid, data) {
-    const encrypted = encryptIncome(data)
     return addDoc(collection(db, 'cushion_income'), {
       userId: uid,
       date: data.date,
+      amount: data.amount,
+      source: data.source,
+      notes: data.notes ?? null,
       importedFrom: data.importedFrom ?? null,
-      ...encrypted,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
   },
 
   async update(docId, data) {
-    const encrypted = encryptIncome(data)
     return updateDoc(doc(db, 'cushion_income', docId), {
       date: data.date,
-      ...encrypted,
+      amount: data.amount,
+      source: data.source,
+      notes: data.notes ?? null,
       updatedAt: serverTimestamp(),
     })
   },
@@ -274,56 +198,39 @@ export const income = {
 
 // ---------------------------------------------------------------------------
 // cushion_recurring_items
-// Encrypted fields: name, amount
 // ---------------------------------------------------------------------------
-
-function encryptRecurring(data) {
-  return {
-    name: encrypt(data.name),
-    amount: encrypt(data.amount),
-  }
-}
-
-function decryptRecurring(raw) {
-  return {
-    ...raw,
-    name: decrypt(raw.name),
-    amount: decryptNumber(raw.amount),
-  }
-}
 
 export const recurringItems = {
   async getAll(uid) {
-    const docs = await getAll('cushion_recurring_items', uid, orderBy('nextDueDate'))
-    return docs.map(decryptRecurring)
+    return getAll('cushion_recurring_items', uid, orderBy('nextDueDate'))
   },
 
   async add(uid, data) {
-    const encrypted = encryptRecurring(data)
     return addDoc(collection(db, 'cushion_recurring_items'), {
       userId: uid,
       type: data.type,
       frequency: data.frequency,
       nextDueDate: data.nextDueDate,
+      name: data.name,
+      amount: data.amount,
       reminderDaysBefore: data.reminderDaysBefore ?? null,
       isActive: data.isActive ?? true,
       notes: data.notes ?? null,
-      ...encrypted,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
   },
 
   async update(docId, data) {
-    const encrypted = encryptRecurring(data)
     return updateDoc(doc(db, 'cushion_recurring_items', docId), {
       type: data.type,
       frequency: data.frequency,
       nextDueDate: data.nextDueDate,
+      name: data.name,
+      amount: data.amount,
       reminderDaysBefore: data.reminderDaysBefore ?? null,
       isActive: data.isActive,
       notes: data.notes ?? null,
-      ...encrypted,
       updatedAt: serverTimestamp(),
     })
   },
@@ -335,58 +242,41 @@ export const recurringItems = {
 
 // ---------------------------------------------------------------------------
 // cushion_investments
-// Encrypted fields: name, amountInvested, currentValue
 // ---------------------------------------------------------------------------
-
-function encryptInvestment(data) {
-  return {
-    name: encrypt(data.name),
-    amountInvested: encrypt(data.amountInvested),
-    currentValue: data.currentValue != null ? encrypt(data.currentValue) : null,
-  }
-}
-
-function decryptInvestment(raw) {
-  return {
-    ...raw,
-    name: decrypt(raw.name),
-    amountInvested: decryptNumber(raw.amountInvested),
-    currentValue: raw.currentValue ? decryptNumber(raw.currentValue) : null,
-  }
-}
 
 export const investments = {
   async getAll(uid) {
-    const docs = await getAll('cushion_investments', uid, orderBy('startDate', 'desc'))
-    return docs.map(decryptInvestment)
+    return getAll('cushion_investments', uid, orderBy('startDate', 'desc'))
   },
 
   async add(uid, data) {
-    const encrypted = encryptInvestment(data)
     return addDoc(collection(db, 'cushion_investments'), {
       userId: uid,
       type: data.type,
       platform: data.platform,
+      name: data.name,
+      amountInvested: data.amountInvested,
+      currentValue: data.currentValue ?? null,
       returnsPercent: data.returnsPercent ?? null,
       startDate: data.startDate,
       maturityDate: data.maturityDate ?? null,
       notes: data.notes ?? null,
-      ...encrypted,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
   },
 
   async update(docId, data) {
-    const encrypted = encryptInvestment(data)
     return updateDoc(doc(db, 'cushion_investments', docId), {
       type: data.type,
       platform: data.platform,
+      name: data.name,
+      amountInvested: data.amountInvested,
+      currentValue: data.currentValue ?? null,
       returnsPercent: data.returnsPercent ?? null,
       startDate: data.startDate,
       maturityDate: data.maturityDate ?? null,
       notes: data.notes ?? null,
-      ...encrypted,
       updatedAt: serverTimestamp(),
     })
   },
@@ -398,52 +288,35 @@ export const investments = {
 
 // ---------------------------------------------------------------------------
 // cushion_loans
-// Encrypted fields: person, amount, notes
 // ---------------------------------------------------------------------------
-
-function encryptLoan(data) {
-  return {
-    person: encrypt(data.person),
-    amount: encrypt(data.amount),
-    notes: data.notes ? encrypt(data.notes) : null,
-  }
-}
-
-function decryptLoan(raw) {
-  return {
-    ...raw,
-    person: decrypt(raw.person),
-    amount: decryptNumber(raw.amount),
-    notes: raw.notes ? decrypt(raw.notes) : null,
-  }
-}
 
 export const loans = {
   async getAll(uid) {
-    const docs = await getAll('cushion_loans', uid, orderBy('dateGiven', 'desc'))
-    return docs.map(decryptLoan)
+    return getAll('cushion_loans', uid, orderBy('dateGiven', 'desc'))
   },
 
   async add(uid, data) {
-    const encrypted = encryptLoan(data)
     return addDoc(collection(db, 'cushion_loans'), {
       userId: uid,
       dateGiven: data.dateGiven,
       expectedReturnDate: data.expectedReturnDate,
+      person: data.person,
+      amount: data.amount,
+      notes: data.notes ?? null,
       isReturned: data.isReturned ?? false,
-      ...encrypted,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
   },
 
   async update(docId, data) {
-    const encrypted = encryptLoan(data)
     return updateDoc(doc(db, 'cushion_loans', docId), {
       dateGiven: data.dateGiven,
       expectedReturnDate: data.expectedReturnDate,
+      person: data.person,
+      amount: data.amount,
+      notes: data.notes ?? null,
       isReturned: data.isReturned,
-      ...encrypted,
       updatedAt: serverTimestamp(),
     })
   },
@@ -498,52 +371,35 @@ export const creditCards = {
 
 // ---------------------------------------------------------------------------
 // cushion_emis
-// Encrypted fields: merchant, emiAmount
 // ---------------------------------------------------------------------------
-
-function encryptEmi(data) {
-  return {
-    merchant: encrypt(data.merchant),
-    emiAmount: encrypt(data.emiAmount),
-  }
-}
-
-function decryptEmi(raw) {
-  return {
-    ...raw,
-    merchant: decrypt(raw.merchant),
-    emiAmount: decryptNumber(raw.emiAmount),
-  }
-}
 
 export const emis = {
   async getAll(uid) {
-    const docs = await getAll('cushion_emis', uid, orderBy('monthsRemaining'))
-    return docs.map(decryptEmi)
+    return getAll('cushion_emis', uid, orderBy('monthsRemaining'))
   },
 
   async add(uid, data) {
-    const encrypted = encryptEmi(data)
     return addDoc(collection(db, 'cushion_emis'), {
       userId: uid,
       cardId: data.cardId,
       monthsRemaining: data.monthsRemaining,
       startDate: data.startDate,
+      merchant: data.merchant,
+      emiAmount: data.emiAmount,
       notes: data.notes ?? null,
-      ...encrypted,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
   },
 
   async update(docId, data) {
-    const encrypted = encryptEmi(data)
     return updateDoc(doc(db, 'cushion_emis', docId), {
       cardId: data.cardId,
       monthsRemaining: data.monthsRemaining,
       startDate: data.startDate,
+      merchant: data.merchant,
+      emiAmount: data.emiAmount,
       notes: data.notes ?? null,
-      ...encrypted,
       updatedAt: serverTimestamp(),
     })
   },
@@ -555,45 +411,33 @@ export const emis = {
 
 // ---------------------------------------------------------------------------
 // cushion_budgets
-// Encrypted fields: monthlyLimit
 // ---------------------------------------------------------------------------
-
-function encryptBudget(data) {
-  return { monthlyLimit: encrypt(data.monthlyLimit) }
-}
-
-function decryptBudget(raw) {
-  return { ...raw, monthlyLimit: decryptNumber(raw.monthlyLimit) }
-}
 
 export const budgets = {
   async getAll(uid) {
-    const docs = await getAll('cushion_budgets', uid)
-    return docs.map(decryptBudget)
+    return getAll('cushion_budgets', uid)
   },
 
   async add(uid, data) {
-    const encrypted = encryptBudget(data)
     return addDoc(collection(db, 'cushion_budgets'), {
       userId: uid,
       categoryId: data.categoryId,
+      monthlyLimit: data.monthlyLimit,
       alertAt80: data.alertAt80 ?? true,
       alertAt100: data.alertAt100 ?? true,
       isActive: data.isActive ?? true,
-      ...encrypted,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
   },
 
   async update(docId, data) {
-    const encrypted = encryptBudget(data)
     return updateDoc(doc(db, 'cushion_budgets', docId), {
       categoryId: data.categoryId,
+      monthlyLimit: data.monthlyLimit,
       alertAt80: data.alertAt80,
       alertAt100: data.alertAt100,
       isActive: data.isActive,
-      ...encrypted,
       updatedAt: serverTimestamp(),
     })
   },
