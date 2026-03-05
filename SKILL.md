@@ -87,3 +87,6 @@ stop to ask. Flag at the end.
 ## Git
 When I say push or push to [branch]: stage all, commit with 
 a descriptive message, push, confirm. No prompts.
+
+7. No encryption -- data stored as plaintext in Firestore.
+   Do not use CryptoJS or any encryption layer.
