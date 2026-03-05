@@ -26,7 +26,7 @@ Update this line at the start of each session.
 4. userId -- first field on every Firestore document
 5. Aggregations -- src/analytics.js only, never inline in components
 6. Claude calls -- src/claude.js only, never inline in components
-7. Encryption -- DAL encrypts amount, description, notes on write and decrypts on read
+7. No encryption -- data is stored as plaintext in Firestore. Do not use CryptoJS or any encryption layer.
 8. Categories and recurring items -- always live from Firestore, never hardcoded
 9. Scripts -- always run inside /venv
 
@@ -44,11 +44,56 @@ Update this line at the start of each session.
 - Charts: Recharts with M3 colour palette
 - No heavy shadows -- M3 tinted surface elevation only
 
+## Git behaviour
+When the user says "push" or "push to main" or "push to [branch]":
+- Stage all changed files
+- Write a concise commit message describing what was built
+- Commit and push to the specified branch
+- Confirm with: branch name, commit message, files changed
+
+Default branch for feature work: dev
+Default branch for completed features: main
+Never push to main unless explicitly told to.
+Never ask "are you sure" -- just do it and confirm after.
+
+## Communication style
+Before starting a task, give 2-3 sentences on what you are
+building and your approach. Enough context that a non-technical
+person understands what is about to happen and why.
+
+After completing, briefly confirm what was built and call out
+anything the user should know or decide -- e.g. a default you
+chose that they might want to change.
+
+If something is ambiguous, state your assumption and proceed.
+Do not ask. Flag the assumption at the end so the user can
+correct it if needed.
+
+If something fails, say what failed, why, and what you are
+trying next. One short paragraph.
+
+Never explain line by line. No jargon without a brief
+clarification. No excessive bullet points.
+
+## Autonomy
+Work autonomously. Do not ask for confirmation on individual
+files, folder names, or implementation details -- make the
+right call based on SKILL.md and the PRD and keep going.
+
+Only stop and ask when:
+- You need a value not provided (API key, Firebase config)
+- You are about to do something irreversible (delete data, change schema)
+- You hit a genuine blocker you cannot resolve
+
+Otherwise just build and tell me what you did.
+
 ## Session startup -- do this before writing any code
-1. State which feature you are building today
-2. Confirm you have read this SKILL.md
-3. Check Section 5 of the PRD before creating any new Firestore collection
-4. Check Section 12 of the PRD for the full mandatory rules list
+1. Read SKILL.md (this file)
+2. Read the PRD at https://www.notion.so/31903a88e6bd81079704e95f8802b207
+3. Look at the existing codebase and determine what is built,
+   what is partial, and what is not started
+4. State your findings and propose what to work on next
+5. Wait for confirmation before writing any code
 
 ## Out of scope -- never build unless explicitly told to
 - SMS or bank feed integration of any kind
@@ -57,36 +102,3 @@ Update this line at the start of each session.
 - Trip tracking UI (Phase 5 -- tripId field exists in schema, no UI yet)
 - Expected Income UI (Phase 3 -- needs design session first)
 - Cross-app integration with any other my_os app
-
-## Communication style
-Before starting a task, give 2-3 sentences on what you are 
-building and how you are approaching it. Enough context that 
-a non-technical person understands what is about to happen 
-and why.
-
-After completing it, briefly confirm what was built and call 
-out anything the user should know or decide -- e.g. a default 
-you chose that they might want to change.
-
-If something is ambiguous, state your assumption and proceed. 
-Do not ask. Flag the assumption at the end so the user can 
-correct it if needed.
-
-If something fails, say what failed, why, and what you are 
-trying next. One short paragraph.
-
-Never explain line by line. No jargon without a brief 
-clarification. No excessive bullet points.
-
-## Communication style
-Before starting, 2-3 sentences on what you're building and 
-your approach. After, confirm what was built and flag any 
-assumptions you made. State assumptions and proceed -- never 
-stop to ask. Flag at the end.
-
-## Git
-When I say push or push to [branch]: stage all, commit with 
-a descriptive message, push, confirm. No prompts.
-
-7. No encryption -- data stored as plaintext in Firestore.
-   Do not use CryptoJS or any encryption layer.
