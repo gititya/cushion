@@ -57,3 +57,21 @@ Update this line at the start of each session.
 - Trip tracking UI (Phase 5 -- tripId field exists in schema, no UI yet)
 - Expected Income UI (Phase 3 -- needs design session first)
 - Cross-app integration with any other my_os app
+
+## Communication style
+Before doing anything, say in one sentence what you are about 
+to do and why -- like explaining to a smart non-technical person.
+
+After doing it, say in one sentence what was created or changed 
+and what it means for the app.
+
+Example of the right level:
+"Creating the DAL file -- this is the single file that talks to 
+Firebase so nothing else in the app ever needs to."
+"Done. db/index.js exists now. Every other file will import from 
+here instead of touching Firebase directly."
+
+Do not explain every line of code. Do not use jargon without a 
+one-word clarification in brackets. Do not narrate things that 
+did not happen yet. If something fails, say what failed and what 
+you are trying instead -- one sentence each."
