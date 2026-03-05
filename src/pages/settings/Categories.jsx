@@ -1,18 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Box,
   Button,
   CircularProgress,
+  ClickAwayListener,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
   IconButton,
+  Popper,
   Stack,
   TextField,
   Typography,
 } from '@mui/material'
+import EmojiPicker from 'emoji-picker-react'
 import AddIcon from '@mui/icons-material/Add'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
@@ -29,26 +32,35 @@ export default function Categories() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const emojiAnchor = useRef(null)
 
   useEffect(() => {
     load()
   }, [])
 
   async function load() {
-    const cats = await categories.getAll(currentUser.uid)
-    setList(cats)
-    setLoading(false)
+    try {
+      const cats = await categories.getAll(currentUser.uid)
+      setList(cats)
+    } catch (err) {
+      console.error('Categories load error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   function openAdd() {
     setEditing(null)
     setForm(EMPTY_FORM)
+    setPickerOpen(false)
     setDialogOpen(true)
   }
 
   function openEdit(cat) {
     setEditing(cat)
     setForm({ name: cat.name, icon: cat.icon ?? '', color: cat.color ?? '#6750A4' })
+    setPickerOpen(false)
     setDialogOpen(true)
   }
 
@@ -177,39 +189,98 @@ export default function Categories() {
               fullWidth
               autoFocus
             />
-            <TextField
-              label="Emoji Icon"
-              name="icon"
-              value={form.icon}
-              onChange={handleChange}
-              fullWidth
-              placeholder="e.g. 🍔"
-              inputProps={{ maxLength: 4 }}
-            />
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                Color
+            {/* Emoji picker */}
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                Icon
               </Typography>
               <Box
-                component="input"
-                type="color"
-                name="color"
-                value={form.color}
-                onChange={handleChange}
+                ref={emojiAnchor}
+                onClick={() => setPickerOpen((v) => !v)}
                 sx={{
-                  width: 48,
-                  height: 32,
-                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  px: 1.5,
+                  py: 1.25,
+                  border: '1px solid',
+                  borderColor: pickerOpen ? 'primary.main' : 'divider',
                   borderRadius: 1,
                   cursor: 'pointer',
-                  p: 0,
-                  backgroundColor: 'transparent',
+                  transition: 'border-color 0.15s',
+                  '&:hover': { borderColor: 'text.primary' },
                 }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                {form.color}
-              </Typography>
-            </Stack>
+              >
+                <Typography sx={{ fontSize: '1.5rem', lineHeight: 1 }}>
+                  {form.icon || '😀'}
+                </Typography>
+                <Typography variant="body2" color={pickerOpen ? 'primary.main' : 'text.secondary'}>
+                  {form.icon ? 'Change icon' : 'Choose an icon'}
+                </Typography>
+              </Box>
+              <Popper
+                open={pickerOpen}
+                anchorEl={emojiAnchor.current}
+                placement="bottom-start"
+                sx={{ zIndex: 1400 }}
+              >
+                <ClickAwayListener onClickAway={() => setPickerOpen(false)}>
+                  <Box sx={{ mt: 0.5 }}>
+                    <EmojiPicker
+                      onEmojiClick={(e) => {
+                        setForm((prev) => ({ ...prev, icon: e.emoji }))
+                        setPickerOpen(false)
+                      }}
+                      lazyLoadEmojis
+                    />
+                  </Box>
+                </ClickAwayListener>
+              </Popper>
+            </Box>
+
+            {/* Color picker */}
+            <TextField
+              label="Color"
+              value={form.color}
+              onChange={(e) => {
+                const val = e.target.value
+                if (/^#[0-9a-fA-F]{0,6}$/.test(val)) {
+                  setForm((prev) => ({ ...prev, color: val }))
+                }
+              }}
+              fullWidth
+              inputProps={{ maxLength: 7, sx: { letterSpacing: 1 } }}
+              InputProps={{
+                startAdornment: (
+                  <Box sx={{ position: 'relative', mr: 1, flexShrink: 0 }}>
+                    <Box
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        backgroundColor: /^#[0-9a-fA-F]{6}$/.test(form.color) ? form.color : '#6750A4',
+                        boxShadow: '0 0 0 3px rgba(103,80,164,0.25)',
+                        cursor: 'pointer',
+                      }}
+                    />
+                    <Box
+                      component="input"
+                      type="color"
+                      value={/^#[0-9a-fA-F]{6}$/.test(form.color) ? form.color : '#6750A4'}
+                      onChange={(e) => setForm((prev) => ({ ...prev, color: e.target.value }))}
+                      sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        opacity: 0,
+                        width: '100%',
+                        height: '100%',
+                        cursor: 'pointer',
+                      }}
+                    />
+                  </Box>
+                ),
+              }}
+            />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

@@ -10,6 +10,8 @@ import Dashboard from './pages/dashboard.jsx'
 import Expenses from './pages/Expenses.jsx'
 import ExpenseForm from './pages/ExpenseForm.jsx'
 import Categories from './pages/settings/Categories.jsx'
+import Income from './pages/Income.jsx'
+import IncomeForm from './pages/IncomeForm.jsx'
 
 /**
  * App -- root router.
@@ -52,8 +54,9 @@ export default function App() {
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/expenses/new" element={<ExpenseForm />} />
               <Route path="/expenses/:id/edit" element={<ExpenseForm />} />
-              <Route path="/income" element={<Placeholder name="Income" />} />
-              <Route path="/income/new" element={<Placeholder name="New Income" />} />
+              <Route path="/income" element={<Income />} />
+              <Route path="/income/new" element={<IncomeForm />} />
+              <Route path="/income/:id/edit" element={<IncomeForm />} />
               <Route path="/recurring" element={<Placeholder name="Recurring Items" />} />
               <Route path="/investments" element={<Placeholder name="Investments" />} />
               <Route path="/loans" element={<Placeholder name="Loans" />} />

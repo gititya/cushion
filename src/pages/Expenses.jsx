@@ -25,13 +25,18 @@ export default function Expenses() {
 
   useEffect(() => {
     async function load() {
-      const [exps, cats] = await Promise.all([
-        expenses.getAll(currentUser.uid),
-        categories.getAll(currentUser.uid),
-      ])
-      setExpenseList(exps)
-      setCategoryList(cats)
-      setLoading(false)
+      try {
+        const [exps, cats] = await Promise.all([
+          expenses.getAll(currentUser.uid),
+          categories.getAll(currentUser.uid),
+        ])
+        setExpenseList(exps)
+        setCategoryList(cats)
+      } catch (err) {
+        console.error('Expenses load error:', err)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [currentUser.uid])

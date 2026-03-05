@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
   FormControl,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
@@ -12,18 +14,36 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import { useAuth } from '../contexts/AuthContext.jsx'
-import { expenses, categories } from '../db/index.js'
+import { expenses, categories, creditCards } from '../db/index.js'
+import { parseExpenseNL } from '../claude.js'
 
-const PAYMENT_METHODS = ['Cash', 'UPI', 'Credit Card', 'Debit Card', 'Net Banking', 'Other']
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'upi', label: 'UPI' },
+  { value: 'credit_card', label: 'Credit Card' },
+  { value: 'net_banking', label: 'Net Banking' },
+]
 
 const EMPTY_FORM = {
   date: new Date().toISOString().slice(0, 10),
   amount: '',
   description: '',
   categoryId: '',
-  paymentMethod: 'UPI',
+  paymentMethod: 'upi',
+  cardId: '',
   notes: '',
+}
+
+function resolveDate(val) {
+  if (!val || val === 'today') return new Date().toISOString().slice(0, 10)
+  if (val === 'yesterday') {
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    return d.toISOString().slice(0, 10)
+  }
+  return val
 }
 
 export default function ExpenseForm() {
@@ -33,42 +53,91 @@ export default function ExpenseForm() {
   const isEdit = Boolean(id)
 
   const [categoryList, setCategoryList] = useState([])
+  const [cardList, setCardList] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
 
+  const [nlInput, setNlInput] = useState('')
+  const [nlParsing, setNlParsing] = useState(false)
+  const [nlError, setNlError] = useState(null)
+
   useEffect(() => {
     async function load() {
-      const cats = await categories.getAll(currentUser.uid)
-      setCategoryList(cats)
+      try {
+        const [cats, cards] = await Promise.all([
+          categories.getAll(currentUser.uid),
+          creditCards.getAll(currentUser.uid),
+        ])
+        setCategoryList(cats)
+        setCardList(cards)
 
-      if (isEdit) {
-        const all = await expenses.getAll(currentUser.uid)
-        const exp = all.find((e) => e.id === id)
-        if (exp) {
-          setForm({
-            date: exp.date,
-            amount: exp.amount ?? '',
-            description: exp.description ?? '',
-            categoryId: exp.categoryId ?? '',
-            paymentMethod: exp.paymentMethod ?? 'UPI',
-            notes: exp.notes ?? '',
-          })
+        if (isEdit) {
+          const all = await expenses.getAll(currentUser.uid)
+          const exp = all.find((e) => e.id === id)
+          if (exp) {
+            setForm({
+              date: exp.date,
+              amount: exp.amount ?? '',
+              description: exp.description ?? '',
+              categoryId: exp.categoryId ?? '',
+              paymentMethod: exp.paymentMethod ?? 'upi',
+              cardId: exp.cardId ?? '',
+              notes: exp.notes ?? '',
+            })
+          }
         }
+      } catch (err) {
+        console.error('ExpenseForm load error:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     load()
   }, [currentUser.uid, id, isEdit])
 
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setForm((prev) => {
+      const next = { ...prev, [name]: value }
+      // Clear card when switching away from credit_card
+      if (name === 'paymentMethod' && value !== 'credit_card') {
+        next.cardId = ''
+      }
+      return next
+    })
+  }
+
+  async function handleNlParse() {
+    if (!nlInput.trim()) return
+    setNlParsing(true)
+    setNlError(null)
+    try {
+      const parsed = await parseExpenseNL(nlInput, categoryList, cardList)
+      setForm((prev) => ({
+        ...prev,
+        date: resolveDate(parsed.date) || prev.date,
+        amount: parsed.amount != null ? String(parsed.amount) : prev.amount,
+        description: parsed.description ?? prev.description,
+        categoryId: parsed.categoryId ?? prev.categoryId,
+        paymentMethod: parsed.paymentMethod ?? prev.paymentMethod,
+        cardId: parsed.cardId ?? prev.cardId,
+      }))
+    } catch {
+      setNlError('Could not reach Claude. Fill in the fields manually.')
+    } finally {
+      setNlParsing(false)
+    }
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
-    const data = { ...form, amount: parseFloat(form.amount) }
+    const data = {
+      ...form,
+      amount: parseFloat(form.amount),
+      cardId: form.paymentMethod === 'credit_card' ? form.cardId || null : null,
+    }
     if (isEdit) {
       await expenses.update(id, data)
     } else {
@@ -93,6 +162,37 @@ export default function ExpenseForm() {
 
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={2.5}>
+          {/* NL input -- new entry only */}
+          {!isEdit && (
+            <TextField
+              label="Describe the expense (optional)"
+              placeholder="e.g. paid 450 for coffee at Blue Tokai via HDFC card"
+              value={nlInput}
+              onChange={(e) => setNlInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleNlParse())}
+              fullWidth
+              multiline
+              rows={2}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end" sx={{ alignSelf: 'flex-end', mb: 1 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={handleNlParse}
+                      disabled={nlParsing || !nlInput.trim()}
+                      startIcon={nlParsing ? <CircularProgress size={14} /> : <AutoAwesomeIcon />}
+                    >
+                      {nlParsing ? 'Parsing…' : 'Parse'}
+                    </Button>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          )}
+
+          {nlError && <Alert severity="warning">{nlError}</Alert>}
+
           <TextField
             label="Date"
             name="date"
@@ -148,12 +248,33 @@ export default function ExpenseForm() {
               onChange={handleChange}
             >
               {PAYMENT_METHODS.map((m) => (
-                <MenuItem key={m} value={m}>
-                  {m}
+                <MenuItem key={m.value} value={m.value}>
+                  {m.label}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+
+          {form.paymentMethod === 'credit_card' && (
+            <FormControl fullWidth>
+              <InputLabel>Credit Card</InputLabel>
+              <Select
+                name="cardId"
+                value={form.cardId}
+                label="Credit Card"
+                onChange={handleChange}
+              >
+                <MenuItem value="">
+                  <em>Not specified</em>
+                </MenuItem>
+                {cardList.map((card) => (
+                  <MenuItem key={card.id} value={card.id}>
+                    {card.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           <TextField
             label="Notes"
