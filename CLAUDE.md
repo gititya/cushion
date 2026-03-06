@@ -57,8 +57,8 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | `/emis` | — | Placeholder |
 | `/settings/cards` | — | Placeholder |
 | `/settings/budgets` | `pages/settings/Budgets.jsx` | Done (progress bars, add/edit/delete) |
-| `/settings/webhooks` | — | Placeholder |
-| `/settings/account` | — | Placeholder |
+| `/settings/webhooks` | — | Placeholder (Phase 2) |
+| `/settings/account` | — | Placeholder (cut — not needed) |
 
 ## Data
 - 871 historical expense rows imported via `scripts/import_data.py` (CSV from Google Sheets)
@@ -92,6 +92,29 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 - "Every N months" not appearing in dropdown after code change → hard refresh or dev server restart
 - Variable monthly items (e.g. E-bill, Gas): mark as Variable + Monthly; enter actual amount each month in push drawer, enter 0 for months not due
 - Push to Transactions creates expenses with `importedFrom: 'recurring_push_YYYY-MM'`; to clean up test pushes, filter by "Recurring" category chip in /expenses and delete
+
+## Roadmap
+
+### Phase 2 (in priority order)
+1. DataContext global cache — fetch once on login, instant page switches
+2. Settings > Cards (`/settings/cards`) — unlocks credit card dropdown in expense form + NL parsing
+3. Settings > Webhooks (`/settings/webhooks`) — Google Sheets pull for "Hers" loan balance
+4. Dashboard enhancements — month selector, spending by category chart, recent transactions widget
+5. Notifications / alerts — budget 80%/100% delivery (alertAt80/alertAt100 flags already in Firestore)
+6. Export — CSV/PDF of expenses
+7. Recurring auto-push — auto-push on due date instead of manual push drawer
+8. Multi-month budget tracking — historical budget vs actual
+9. EMIs page (`/emis`) — low priority
+10. Income history import — low priority (`cushion_income` is currently empty)
+
+### Phase 3
+- Mobile PWA (install to home screen, offline support)
+- Trip / vacation tagging (`tripId` already on expense docs, no UI yet)
+
+### Cut (not worth building)
+- Settings > Account — Firebase Console handles everything
+- Reports / insights page — redundant with dashboard
+- Global search — expenses search is sufficient
 
 ## Code style
 - Functional components only, no class components
