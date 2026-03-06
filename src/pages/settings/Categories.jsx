@@ -20,13 +20,14 @@ import AddIcon from '@mui/icons-material/Add'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import { useAuth } from '../../contexts/AuthContext.jsx'
-import { categories } from '../../db/index.js'
+import { categories, budgets } from '../../db/index.js'
 
-const EMPTY_FORM = { name: '', icon: '', color: '#6750A4' }
+const EMPTY_FORM = { name: '', icon: '', color: '#6750A4', monthlyLimit: '' }
 
 export default function Categories() {
   const { currentUser } = useAuth()
   const [list, setList] = useState([])
+  const [budgetMap, setBudgetMap] = useState({}) // categoryId → budget doc
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -41,8 +42,12 @@ export default function Categories() {
 
   async function load() {
     try {
-      const cats = await categories.getAll(currentUser.uid)
+      const [cats, bdgs] = await Promise.all([
+        categories.getAll(currentUser.uid),
+        budgets.getAll(currentUser.uid),
+      ])
       setList(cats)
+      setBudgetMap(Object.fromEntries(bdgs.map((b) => [b.categoryId, b])))
     } catch (err) {
       console.error('Categories load error:', err)
     } finally {
@@ -59,7 +64,13 @@ export default function Categories() {
 
   function openEdit(cat) {
     setEditing(cat)
-    setForm({ name: cat.name, icon: cat.icon ?? '', color: cat.color ?? '#6750A4' })
+    const existing = budgetMap[cat.id]
+    setForm({
+      name: cat.name,
+      icon: cat.icon ?? '',
+      color: cat.color ?? '#6750A4',
+      monthlyLimit: existing ? String(existing.monthlyLimit) : '',
+    })
     setPickerOpen(false)
     setDialogOpen(true)
   }
@@ -70,6 +81,8 @@ export default function Categories() {
 
   async function handleSave() {
     setSaving(true)
+    const limitVal = form.monthlyLimit !== '' ? parseFloat(form.monthlyLimit) : null
+
     if (editing) {
       await categories.update(editing.id, {
         name: form.name,
@@ -77,8 +90,22 @@ export default function Categories() {
         color: form.color,
       })
       setList((prev) =>
-        prev.map((c) => (c.id === editing.id ? { ...c, ...form } : c))
+        prev.map((c) => (c.id === editing.id ? { ...c, name: form.name, icon: form.icon, color: form.color } : c))
       )
+      // Upsert or remove budget
+      const existing = budgetMap[editing.id]
+      if (limitVal != null) {
+        if (existing) {
+          await budgets.update(existing.id, { ...existing, monthlyLimit: limitVal })
+          setBudgetMap((prev) => ({ ...prev, [editing.id]: { ...existing, monthlyLimit: limitVal } }))
+        } else {
+          const ref = await budgets.add(currentUser.uid, { categoryId: editing.id, monthlyLimit: limitVal })
+          setBudgetMap((prev) => ({ ...prev, [editing.id]: { id: ref.id, categoryId: editing.id, monthlyLimit: limitVal } }))
+        }
+      } else if (existing) {
+        await budgets.remove(existing.id)
+        setBudgetMap((prev) => { const next = { ...prev }; delete next[editing.id]; return next })
+      }
     } else {
       const ref = await categories.add(currentUser.uid, {
         name: form.name,
@@ -88,8 +115,13 @@ export default function Categories() {
       })
       setList((prev) => [
         ...prev,
-        { id: ref.id, ...form, sortOrder: list.length, isActive: true },
+        { id: ref.id, name: form.name, icon: form.icon, color: form.color, sortOrder: list.length, isActive: true },
       ])
+      // Add budget if limit set
+      if (limitVal != null) {
+        const bRef = await budgets.add(currentUser.uid, { categoryId: ref.id, monthlyLimit: limitVal })
+        setBudgetMap((prev) => ({ ...prev, [ref.id]: { id: bRef.id, categoryId: ref.id, monthlyLimit: limitVal } }))
+      }
     }
     setSaving(false)
     setDialogOpen(false)
@@ -154,6 +186,11 @@ export default function Categories() {
                 <Typography variant="body2" sx={{ flex: 1 }}>
                   {cat.name}
                 </Typography>
+                {budgetMap[cat.id] && (
+                  <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                    ₹{budgetMap[cat.id].monthlyLimit.toLocaleString('en-IN', { maximumFractionDigits: 0 })}/mo
+                  </Typography>
+                )}
                 <IconButton size="small" onClick={() => openEdit(cat)} aria-label="edit">
                   <EditOutlinedIcon fontSize="small" />
                 </IconButton>
@@ -280,6 +317,16 @@ export default function Categories() {
                   </Box>
                 ),
               }}
+            />
+            <TextField
+              label="Monthly budget limit (₹)"
+              name="monthlyLimit"
+              type="number"
+              inputProps={{ min: 0, step: '1' }}
+              value={form.monthlyLimit}
+              onChange={handleChange}
+              fullWidth
+              placeholder="Leave blank for no limit"
             />
           </Stack>
         </DialogContent>
