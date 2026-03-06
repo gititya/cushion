@@ -270,20 +270,21 @@ export const recurringItems = {
 
 export const investments = {
   async getAll(uid) {
-    return getAll('cushion_investments', uid, orderBy('startDate', 'desc'))
+    return getAll('cushion_investments', uid)
   },
 
   async add(uid, data) {
     return addDoc(collection(db, 'cushion_investments'), {
       userId: uid,
       type: data.type,
-      platform: data.platform,
+      platform: data.platform ?? null,
       name: data.name,
       amountInvested: data.amountInvested,
       currentValue: data.currentValue ?? null,
       returnsPercent: data.returnsPercent ?? null,
-      startDate: data.startDate,
+      startDate: data.startDate ?? null,
       maturityDate: data.maturityDate ?? null,
+      status: data.status ?? 'active',
       notes: data.notes ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -293,14 +294,16 @@ export const investments = {
   async update(docId, data) {
     return updateDoc(doc(db, 'cushion_investments', docId), {
       type: data.type,
-      platform: data.platform,
+      platform: data.platform ?? null,
       name: data.name,
       amountInvested: data.amountInvested,
       currentValue: data.currentValue ?? null,
       returnsPercent: data.returnsPercent ?? null,
-      startDate: data.startDate,
+      startDate: data.startDate ?? null,
       maturityDate: data.maturityDate ?? null,
+      status: data.status ?? 'active',
       notes: data.notes ?? null,
+      valueUpdatedAt: data.valueUpdatedAt ?? null,
       updatedAt: serverTimestamp(),
     })
   },
@@ -322,12 +325,15 @@ export const loans = {
   async add(uid, data) {
     return addDoc(collection(db, 'cushion_loans'), {
       userId: uid,
-      dateGiven: data.dateGiven,
-      expectedReturnDate: data.expectedReturnDate,
+      dateGiven: data.dateGiven ?? null,
+      expectedReturnDate: data.expectedReturnDate ?? null,
       person: data.person,
       amount: data.amount,
       notes: data.notes ?? null,
       isReturned: data.isReturned ?? false,
+      repayments: data.repayments ?? [],
+      manualBalance: data.manualBalance ?? false,
+      currentBalance: data.currentBalance ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
@@ -335,12 +341,22 @@ export const loans = {
 
   async update(docId, data) {
     return updateDoc(doc(db, 'cushion_loans', docId), {
-      dateGiven: data.dateGiven,
-      expectedReturnDate: data.expectedReturnDate,
+      dateGiven: data.dateGiven ?? null,
+      expectedReturnDate: data.expectedReturnDate ?? null,
       person: data.person,
       amount: data.amount,
       notes: data.notes ?? null,
-      isReturned: data.isReturned,
+      isReturned: data.isReturned ?? false,
+      repayments: data.repayments ?? [],
+      manualBalance: data.manualBalance ?? false,
+      currentBalance: data.currentBalance ?? null,
+      updatedAt: serverTimestamp(),
+    })
+  },
+
+  async updateRepayments(docId, repayments) {
+    return updateDoc(doc(db, 'cushion_loans', docId), {
+      repayments,
       updatedAt: serverTimestamp(),
     })
   },

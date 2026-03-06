@@ -63,7 +63,7 @@ const EMPTY_FORM = {
 }
 
 function fmt(amount) {
-  return `₹${Number(amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+  return `₹${Number(amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
 }
 
 export default function Recurring() {
@@ -71,6 +71,7 @@ export default function Recurring() {
   const [items, setItems] = useState([])
   const [cats, setCats] = useState([])
   const [loading, setLoading] = useState(true)
+  const [yearlyOpen, setYearlyOpen] = useState(false)
   const [inactiveOpen, setInactiveOpen] = useState(false)
 
   // Add/Edit dialog
@@ -126,6 +127,11 @@ export default function Recurring() {
   const monthlyTotal = useMemo(
     () => monthly.filter((i) => !i.isVariable).reduce((s, i) => s + (i.amount || 0), 0),
     [monthly]
+  )
+
+  const yearlyTotal = useMemo(
+    () => yearly.filter((i) => !i.isVariable).reduce((s, i) => s + (i.amount || 0), 0),
+    [yearly]
   )
 
   const now = new Date()
@@ -275,15 +281,15 @@ export default function Recurring() {
     <Box sx={{ p: 3, maxWidth: 1000, mx: 'auto' }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h5" fontWeight={700}>
-          Recurring Items
+        <Typography variant="h6" fontWeight={700}>
+          recurring
         </Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<AddIcon />} onClick={openAdd}>
             Add
           </Button>
           <Button variant="contained" endIcon={<SendIcon />} onClick={openPush}>
-            Push This Month
+            push this month
           </Button>
         </Stack>
       </Stack>
@@ -299,7 +305,7 @@ export default function Recurring() {
           <Typography
             variant="subtitle2"
             fontWeight={700}
-            textTransform="uppercase"
+            textTransform="none"
             letterSpacing={0.5}
           >
             Monthly
@@ -330,7 +336,7 @@ export default function Recurring() {
             <Typography
               variant="subtitle2"
               fontWeight={700}
-              textTransform="uppercase"
+              textTransform="none"
               letterSpacing={0.5}
             >
               Occasional
@@ -344,31 +350,37 @@ export default function Recurring() {
         </Paper>
       )}
 
-      {/* Yearly section */}
+      {/* Yearly section (collapsible) */}
       <Paper variant="outlined" sx={{ mb: 2, overflow: 'hidden' }}>
         <Stack
           direction="row"
           alignItems="center"
-          spacing={1}
-          sx={{ px: 2, py: 1.5, bgcolor: 'action.hover' }}
+          justifyContent="space-between"
+          sx={{ px: 2, py: 1.5, bgcolor: 'action.hover', cursor: 'pointer' }}
+          onClick={() => setYearlyOpen((v) => !v)}
         >
-          <Typography
-            variant="subtitle2"
-            fontWeight={700}
-            textTransform="uppercase"
-            letterSpacing={0.5}
-          >
-            Yearly
-          </Typography>
-          <Chip label={`${yearly.length} items`} size="small" />
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography variant="subtitle2" fontWeight={700} textTransform="none" letterSpacing={0.5}>
+              Yearly
+            </Typography>
+            <Chip label={`${yearly.length} items`} size="small" />
+            {yearlyTotal > 0 && (
+              <Typography variant="body2" color="text.secondary">
+                {fmt(yearlyTotal)}/yr (fixed)
+              </Typography>
+            )}
+          </Stack>
+          {yearlyOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
         </Stack>
-        {yearly.length > 0 ? (
-          <ItemTable items={yearly} catMap={catMap} onEdit={openEdit} onDelete={handleDelete} onToggleActive={toggleActive} />
-        ) : (
-          <Typography color="text.secondary" sx={{ px: 2, py: 2 }}>
-            No yearly items.
-          </Typography>
-        )}
+        <Collapse in={yearlyOpen}>
+          {yearly.length > 0 ? (
+            <ItemTable items={yearly} catMap={catMap} onEdit={openEdit} onDelete={handleDelete} onToggleActive={toggleActive} />
+          ) : (
+            <Typography color="text.secondary" sx={{ px: 2, py: 2 }}>
+              No yearly items.
+            </Typography>
+          )}
+        </Collapse>
       </Paper>
 
       {/* Inactive section (collapsible) */}
@@ -384,7 +396,7 @@ export default function Recurring() {
             <Typography
               variant="subtitle2"
               fontWeight={700}
-              textTransform="uppercase"
+              textTransform="none"
               letterSpacing={0.5}
               color="text.secondary"
             >
@@ -407,7 +419,7 @@ export default function Recurring() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingId ? 'Edit Recurring Item' : 'Add Recurring Item'}</DialogTitle>
+        <DialogTitle>{editingId ? 'edit recurring item' : 'add recurring item'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             <TextField
@@ -543,7 +555,7 @@ export default function Recurring() {
         PaperProps={{ sx: { width: { xs: '100%', sm: 560 }, p: 3, overflowY: 'auto' } }}
       >
         <Typography variant="h6" fontWeight={700} mb={1}>
-          Push to Transactions — {monthLabel} {currentYear}
+          push to transactions — {monthLabel} {currentYear}
         </Typography>
 
         {duplicateWarning && (
@@ -557,10 +569,10 @@ export default function Recurring() {
           variant="subtitle2"
           color="text.secondary"
           mb={1}
-          textTransform="uppercase"
+          textTransform="none"
           letterSpacing={0.5}
         >
-          Monthly items ({monthly.length})
+          monthly items ({monthly.length})
         </Typography>
         {pushItems
           .filter((pi) => pi.frequency === 'monthly')
@@ -581,10 +593,10 @@ export default function Recurring() {
           variant="subtitle2"
           color="text.secondary"
           mb={1}
-          textTransform="uppercase"
+          textTransform="none"
           letterSpacing={0.5}
         >
-          Yearly items due this month ({dueYearly.length})
+          yearly items due this month ({dueYearly.length})
         </Typography>
         {dueYearly.length === 0 ? (
           <Typography variant="body2" color="text.secondary" mb={2}>
@@ -612,10 +624,10 @@ export default function Recurring() {
               variant="subtitle2"
               color="text.secondary"
               mb={0.5}
-              textTransform="uppercase"
+              textTransform="none"
               letterSpacing={0.5}
             >
-              Occasional — include if due this month
+              occasional — include if due this month
             </Typography>
             <Typography variant="caption" color="text.secondary" display="block" mb={1}>
               These don't bill every month. Check the ones that are due.
@@ -652,7 +664,7 @@ export default function Recurring() {
             disabled={pushing || !canPush}
             endIcon={<SendIcon />}
           >
-            {pushing ? 'Pushing…' : `Confirm & Push (${includedPushItems.length})`}
+            {pushing ? 'pushing…' : `confirm & push (${includedPushItems.length})`}
           </Button>
         </Box>
       </Drawer>
@@ -666,12 +678,12 @@ function ItemTable({ items, catMap, onEdit, onDelete, onToggleActive }) {
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Category</TableCell>
-            <TableCell>Amount</TableCell>
-            <TableCell>Renewal</TableCell>
-            <TableCell>Payment</TableCell>
-            <TableCell align="right">Actions</TableCell>
+            <TableCell>name</TableCell>
+            <TableCell>category</TableCell>
+            <TableCell>amount</TableCell>
+            <TableCell>renewal</TableCell>
+            <TableCell>payment</TableCell>
+            <TableCell align="right">actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -679,7 +691,16 @@ function ItemTable({ items, catMap, onEdit, onDelete, onToggleActive }) {
             const cat = catMap[item.categoryId]
             return (
               <TableRow key={item.id} hover>
-                <TableCell>{item.name}</TableCell>
+                <TableCell>
+                  <Stack direction="row" alignItems="center" spacing={0.75} component="span" sx={{ display: 'inline-flex' }}>
+                    <span>{item.name}</span>
+                    {item.notes && (
+                      <Tooltip title={item.notes} arrow>
+                        <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.light', flexShrink: 0, cursor: 'help', display: 'inline-block' }} />
+                      </Tooltip>
+                    )}
+                  </Stack>
+                </TableCell>
                 <TableCell>
                   {cat ? (
                     <Chip

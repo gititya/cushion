@@ -32,8 +32,8 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | `cushion_expenses` | — | date, amount, description, categoryId, paymentMethod, cardId, notes |
 | `cushion_income` | — | date, amount, source, notes |
 | `cushion_recurring_items` | — | name, amount, isVariable, categoryId, frequency, frequencyMonths, renewalMonth, paymentMethod, nextDueDate, isActive |
-| `cushion_investments` | — | name, amountInvested, currentValue, type, platform |
-| `cushion_loans` | — | person, amount, dateGiven, expectedReturnDate, isReturned |
+| `cushion_investments` | — | name, amountInvested, currentValue, type (ppf/pf/sip/stocks_etf/fd), platform, status (active/in_progress/matured), startDate, maturityDate, returnsPercent |
+| `cushion_loans` | — | person, amount, dateGiven, expectedReturnDate, isReturned, repayments [{id, date, amount, notes}] |
 | `cushion_emis` | — | merchant, emiAmount, cardId, monthsRemaining, startDate |
 | `cushion_budgets` | — | categoryId, monthlyLimit, alertAt80, alertAt100 |
 | `cushion_credit_cards` | — | name, network, cashbackCategories, rewardPointsRate |
@@ -51,8 +51,9 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | `/income/new` | `pages/IncomeForm.jsx` | Done |
 | `/income/:id/edit` | `pages/IncomeForm.jsx` | Done |
 | `/recurring` | `pages/Recurring.jsx` | Done |
-| `/investments` | — | Placeholder |
-| `/loans` | — | Placeholder |
+| `/assets` | `pages/Assets.jsx` | Done (3 tabs: Investments, FDs, Loans) |
+| `/investments` | — | Redirects to /assets |
+| `/loans` | — | Redirects to /assets |
 | `/emis` | — | Placeholder |
 | `/settings/cards` | — | Placeholder |
 | `/settings/budgets` | — | Placeholder |
@@ -72,6 +73,12 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 - Reads from `scripts/data/transactions.csv`
 - Dry run by default; use `--commit` to write
 - Filters out any rows with date >= 2026-03-01
+
+## scripts/import_assets.py
+- Imports all 11 FDs from `scripts/data/Cushion - Fixed Deposits.csv`
+- Seeds 4 investment items (PPF, PF, Sidvin/SIPs, Stocks & ETF) with Aug 2025 snapshot values
+- After import, update each investment card manually in /assets → Investments tab
+- Loans (Shantanu, Karthik, Hers) are added manually in the UI — no import script
 
 ## scripts/import_recurring.py
 - Reads from `scripts/data/Cushion - Recurring.csv` (3-section layout: monthly active, yearly active, inactive)

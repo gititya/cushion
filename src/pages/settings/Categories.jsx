@@ -111,8 +111,8 @@ export default function Categories() {
   return (
     <Box sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h5" fontWeight={700}>
-          Categories
+        <Typography variant="h6" fontWeight={700}>
+          categories
         </Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>
           Add
@@ -151,7 +151,7 @@ export default function Categories() {
                 <Typography sx={{ fontSize: '1.25rem', lineHeight: 1, flexShrink: 0 }}>
                   {cat.icon}
                 </Typography>
-                <Typography variant="body1" sx={{ flex: 1 }}>
+                <Typography variant="body2" sx={{ flex: 1 }}>
                   {cat.name}
                 </Typography>
                 <IconButton size="small" onClick={() => openEdit(cat)} aria-label="edit">
@@ -177,7 +177,7 @@ export default function Categories() {
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>{editing ? 'Edit Category' : 'New Category'}</DialogTitle>
+        <DialogTitle>{editing ? 'edit category' : 'new category'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
             <TextField

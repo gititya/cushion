@@ -97,8 +97,8 @@ export default function Income() {
       </Alert>
 
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-        <Typography variant="h5" fontWeight={700}>
-          Income
+        <Typography variant="h6" fontWeight={700}>
+          income
         </Typography>
         <Button
           variant="contained"
@@ -112,7 +112,7 @@ export default function Income() {
       <Typography variant="subtitle1" color="text.secondary" mb={2}>
         Total:{' '}
         <strong>
-          ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          ₹{total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
         </strong>
         {selectedMonth && ` in ${monthOptions.find((m) => m.key === selectedMonth)?.label}`}
       </Typography>
@@ -181,7 +181,7 @@ export default function Income() {
                       fontWeight={600}
                       sx={{ flexShrink: 0, color: 'success.main' }}
                     >
-                      +₹{(item.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      +₹{(item.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </Typography>
                     <IconButton
                       size="small"

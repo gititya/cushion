@@ -19,8 +19,7 @@ import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
 import AutorenewIcon from '@mui/icons-material/Autorenew'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import HandshakeOutlinedIcon from '@mui/icons-material/HandshakeOutlined'
+import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
@@ -29,17 +28,16 @@ import { useAuth } from '../contexts/AuthContext.jsx'
 const DRAWER_WIDTH = 240
 
 const navItems = [
-  { label: 'Dashboard', path: '/', icon: <DashboardOutlinedIcon /> },
-  { label: 'Expenses', path: '/expenses', icon: <ReceiptLongOutlinedIcon /> },
-  { label: 'Income', path: '/income', icon: <AccountBalanceWalletOutlinedIcon /> },
-  { label: 'Recurring', path: '/recurring', icon: <AutorenewIcon /> },
-  { label: 'Investments', path: '/investments', icon: <TrendingUpIcon /> },
-  { label: 'Loans', path: '/loans', icon: <HandshakeOutlinedIcon /> },
-  { label: 'EMIs', path: '/emis', icon: <CreditCardOutlinedIcon /> },
+  { label: 'dashboard', path: '/', icon: <DashboardOutlinedIcon /> },
+  { label: 'expenses', path: '/expenses', icon: <ReceiptLongOutlinedIcon /> },
+  { label: 'income', path: '/income', icon: <AccountBalanceWalletOutlinedIcon /> },
+  { label: 'recurring', path: '/recurring', icon: <AutorenewIcon /> },
+  { label: 'assets', path: '/assets', icon: <AccountBalanceOutlinedIcon /> },
+  { label: 'emis', path: '/emis', icon: <CreditCardOutlinedIcon /> },
 ]
 
 const settingsItems = [
-  { label: 'Settings', path: '/settings/categories', icon: <SettingsOutlinedIcon /> },
+  { label: 'settings', path: '/settings/categories', icon: <SettingsOutlinedIcon /> },
 ]
 
 export default function AppShell() {
@@ -62,10 +60,10 @@ export default function AppShell() {
       {/* Brand */}
       <Box className="gradient-hero px-4 py-5">
         <Typography variant="h6" fontWeight={700} sx={{ color: '#fff' }}>
-          Cushion
+          cushion
         </Typography>
         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-          Personal Finance
+          all things money
         </Typography>
       </Box>
 
@@ -93,7 +91,7 @@ export default function AppShell() {
                 }}
               >
                 <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: active ? 600 : 400 }} />
+                <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: active ? 600 : 400, variant: 'body2' }} />
               </ListItemButton>
             </ListItem>
           )
@@ -114,7 +112,7 @@ export default function AppShell() {
               sx={{ mx: 1, borderRadius: 3 }}
             >
               <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
+              <ListItemText primary={item.label} primaryTypographyProps={{ variant: 'body2' }} />
             </ListItemButton>
           </ListItem>
         ))}
@@ -123,7 +121,7 @@ export default function AppShell() {
             <ListItemIcon sx={{ minWidth: 40 }}>
               <LogoutIcon />
             </ListItemIcon>
-            <ListItemText primary="Sign out" />
+            <ListItemText primary="sign out" primaryTypographyProps={{ variant: 'body2' }} />
           </ListItemButton>
         </ListItem>
       </List>
@@ -147,7 +145,7 @@ export default function AppShell() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" fontWeight={700}>
-            Cushion
+            cushion
           </Typography>
         </Toolbar>
       </AppBar>

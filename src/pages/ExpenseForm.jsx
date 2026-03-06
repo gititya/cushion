@@ -156,8 +156,8 @@ export default function ExpenseForm() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 520, mx: 'auto' }}>
-      <Typography variant="h5" fontWeight={700} mb={3}>
-        {isEdit ? 'Edit Expense' : 'New Expense'}
+      <Typography variant="h6" fontWeight={700} mb={3}>
+        {isEdit ? 'edit expense' : 'new expense'}
       </Typography>
 
       <Box component="form" onSubmit={handleSubmit}>

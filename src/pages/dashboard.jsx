@@ -26,7 +26,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useAuth } from '../contexts/AuthContext.jsx'
-import { expenses, categories } from '../db/index.js'
+import { expenses, categories, investments as investmentsDB, loans as loansDB } from '../db/index.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,7 +57,7 @@ function fmtRupeeShort(v) {
 }
 
 function fmtRupeeFull(v) {
-  return `₹${Number(v).toLocaleString('en-IN', { minimumFractionDigits: 0 })}`
+  return `₹${Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
 }
 
 // ---------------------------------------------------------------------------
@@ -224,18 +224,29 @@ export default function Dashboard() {
   const { currentUser } = useAuth()
   const [expenseList, setExpenseList] = useState([])
   const [categoryList, setCategoryList] = useState([])
+  const [assetsTotal, setAssetsTotal] = useState(null)
   const [loading, setLoading] = useState(true)
   const [chartMode, setChartMode] = useState('category')
 
   useEffect(() => {
     async function load() {
       try {
-        const [exps, cats] = await Promise.all([
+        const [exps, cats, invs, lns] = await Promise.all([
           expenses.getAll(currentUser.uid),
           categories.getAll(currentUser.uid),
+          investmentsDB.getAll(currentUser.uid),
+          loansDB.getAll(currentUser.uid),
         ])
         setExpenseList(exps)
         setCategoryList(cats)
+
+        const invTotal = invs.filter((i) => i.type !== 'fd').reduce((s, i) => s + (i.currentValue || 0), 0)
+        const fdTotal = invs.filter((i) => i.type === 'fd' && i.status === 'in_progress').reduce((s, i) => s + (i.currentValue || 0), 0)
+        const loansTotal = lns.reduce((s, l) => {
+          const outstanding = l.manualBalance ? (l.currentBalance ?? 0) : Math.max(0, (l.amount || 0) - (l.repayments || []).reduce((r, p) => r + (p.amount || 0), 0))
+          return s + outstanding
+        }, 0)
+        setAssetsTotal(invTotal + fdTotal + loansTotal)
       } catch (err) {
         console.error('Dashboard load error:', err)
       } finally {
@@ -329,19 +340,19 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 1100, mx: 'auto' }}>
-      <Typography variant="h5" fontWeight={700} mb={3}>
-        Dashboard
+      <Typography variant="h6" fontWeight={700} mb={3}>
+        dashboard
       </Typography>
 
       {/* ── Stat cards ── */}
       <Stack direction="row" spacing={2} mb={4} flexWrap="wrap" useFlexGap>
         <StatCard
-          label={`Spent in ${currentMonthLabel}`}
+          label={`spent in ${currentMonthLabel}`}
           value={fmtRupeeFull(currentMonth.total)}
           sub={`${currentMonth.count} transactions`}
         />
         <StatCard
-          label="vs Last Month"
+          label="vs last month"
           value={`${deltaSign}${fmtRupeeFull(Math.abs(delta))}`}
           valueColor={deltaColor}
           sub={
@@ -352,9 +363,16 @@ export default function Dashboard() {
         />
         {currentCatBreakdown[0] && (
           <StatCard
-            label="Top Category This Month"
+            label="top category this month"
             value={currentCatBreakdown[0].name}
             sub={fmtRupeeFull(currentCatBreakdown[0].amount)}
+          />
+        )}
+        {assetsTotal != null && (
+          <StatCard
+            label="total assets"
+            value={fmtRupeeFull(assetsTotal)}
+            sub="investments + fixed deposits + loans out"
           />
         )}
       </Stack>
@@ -364,7 +382,7 @@ export default function Dashboard() {
         <CardContent>
           <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
             <Typography variant="subtitle1" fontWeight={600}>
-              Monthly Trend
+              monthly trend
             </Typography>
             <ToggleButtonGroup
               size="small"
@@ -372,9 +390,9 @@ export default function Dashboard() {
               value={chartMode}
               onChange={(_, v) => v && setChartMode(v)}
             >
-              <ToggleButton value="total">Total</ToggleButton>
-              <ToggleButton value="category">By Category</ToggleButton>
-              <ToggleButton value="proportion">Proportion</ToggleButton>
+              <ToggleButton value="total">total</ToggleButton>
+              <ToggleButton value="category">by category</ToggleButton>
+              <ToggleButton value="proportion">proportion</ToggleButton>
             </ToggleButtonGroup>
           </Stack>
           {chartMode === 'category' ? (

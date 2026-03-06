@@ -77,8 +77,8 @@ export default function IncomeForm() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 520, mx: 'auto' }}>
-      <Typography variant="h5" fontWeight={700} mb={3}>
-        {isEdit ? 'Edit Income' : 'New Income'}
+      <Typography variant="h6" fontWeight={700} mb={3}>
+        {isEdit ? 'edit income' : 'new income'}
       </Typography>
 
       <Box component="form" onSubmit={handleSubmit}>

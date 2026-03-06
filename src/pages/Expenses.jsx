@@ -19,6 +19,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -110,8 +111,8 @@ export default function Expenses() {
   return (
     <Box sx={{ p: 3, maxWidth: 900, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-        <Typography variant="h5" fontWeight={700}>
-          Expenses
+        <Typography variant="h6" fontWeight={700}>
+          expenses
         </Typography>
         <Button
           variant="contained"
@@ -125,7 +126,7 @@ export default function Expenses() {
       <Typography variant="subtitle1" color="text.secondary" mb={2}>
         Total:{' '}
         <strong>
-          ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          ₹{total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
         </strong>
         {filtered.length !== expenseList.length && (
           <Typography component="span" variant="caption" color="text.secondary" ml={1}>
@@ -197,10 +198,10 @@ export default function Expenses() {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ '& th': { fontWeight: 600, color: 'text.secondary', fontSize: '0.75rem' } }}>
-                <TableCell>Date</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell align="right">Amount</TableCell>
+                <TableCell>date</TableCell>
+                <TableCell>description</TableCell>
+                <TableCell>category</TableCell>
+                <TableCell align="right">amount</TableCell>
                 <TableCell padding="checkbox" />
               </TableRow>
             </TableHead>
@@ -223,13 +224,20 @@ export default function Expenses() {
                       {dateStr}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>
-                      {exp.description || '—'}
+                      <Stack direction="row" alignItems="center" spacing={0.75} component="span" sx={{ display: 'inline-flex' }}>
+                        <span>{exp.description || '—'}</span>
+                        {exp.notes && (
+                          <Tooltip title={exp.notes} arrow>
+                            <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.light', flexShrink: 0, cursor: 'help', display: 'inline-block' }} />
+                          </Tooltip>
+                        )}
+                      </Stack>
                     </TableCell>
                     <TableCell sx={{ color: 'text.secondary', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                       {cat ? `${cat.icon ?? ''} ${cat.name}`.trim() : 'Uncategorised'}
                     </TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      ₹{(exp.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹{(exp.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </TableCell>
                     <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
                       <IconButton
