@@ -42,7 +42,7 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | Route | Component | Status |
 |---|---|---|
 | `/login` | `pages/login.jsx` | Done |
-| `/` | `pages/dashboard.jsx` | Scaffold |
+| `/` | `pages/dashboard.jsx` | In progress |
 | `/expenses` | `pages/Expenses.jsx` | Done |
 | `/expenses/new` | `pages/ExpenseForm.jsx` | Done |
 | `/expenses/:id/edit` | `pages/ExpenseForm.jsx` | Done |
@@ -57,6 +57,20 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | `/settings/budgets` | — | Placeholder |
 | `/settings/webhooks` | — | Placeholder |
 | `/settings/account` | — | Placeholder |
+
+## Data
+- 871 historical expense rows imported via `scripts/import_data.py` (CSV from Google Sheets)
+- Date range: Mar 2025 – Feb 2026
+- All imported docs have `importedFrom: 'csv_import_2025'`
+- Import script is one-time use; kept in `scripts/` for reference but not needed again
+- `scripts/data/` and `scripts/.env` are gitignored (raw CSV + service account path)
+- Service account JSON stored at `/Users/aditya/Documents/Projects/firebase/cushion-serviceaccount.json`
+
+## scripts/import_data.py
+- Requires `firebase-admin` and `python-dotenv` (installed in `my_os_venv`)
+- Reads from `scripts/data/transactions.csv`
+- Dry run by default; use `--commit` to write
+- Filters out any rows with date >= 2026-03-01
 
 ## Code style
 - Functional components only, no class components

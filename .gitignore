@@ -71,3 +71,8 @@ dist/
 
 # dataconnect generated files
 .dataconnect
+
+# Import scripts data (raw CSV files, service account keys)
+scripts/data/
+scripts/.env
+scripts/venv/

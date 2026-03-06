@@ -5,13 +5,21 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Divider,
   IconButton,
+  InputAdornment,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import SearchIcon from '@mui/icons-material/Search'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { expenses, categories } from '../db/index.js'
 
@@ -21,6 +29,7 @@ export default function Expenses() {
   const [expenseList, setExpenseList] = useState([])
   const [categoryList, setCategoryList] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(null)
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -51,23 +60,16 @@ export default function Expenses() {
     [categoryList]
   )
 
-  const filtered = useMemo(
-    () =>
-      selectedCategory
-        ? expenseList.filter((e) => e.categoryId === selectedCategory)
-        : expenseList,
-    [expenseList, selectedCategory]
-  )
-
-  const grouped = useMemo(() => {
-    const map = {}
-    for (const exp of filtered) {
-      const key = exp.date
-      if (!map[key]) map[key] = []
-      map[key].push(exp)
+  const filtered = useMemo(() => {
+    let list = selectedCategory
+      ? expenseList.filter((e) => e.categoryId === selectedCategory)
+      : expenseList
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      list = list.filter((e) => e.description?.toLowerCase().includes(q))
     }
-    return Object.entries(map).sort(([a], [b]) => b.localeCompare(a))
-  }, [filtered])
+    return list
+  }, [expenseList, selectedCategory, search])
 
   const total = useMemo(
     () => filtered.reduce((sum, e) => sum + (e.amount || 0), 0),
@@ -83,7 +85,7 @@ export default function Expenses() {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+    <Box sx={{ p: 3, maxWidth: 900, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
         <Typography variant="h5" fontWeight={700}>
           Expenses
@@ -102,9 +104,14 @@ export default function Expenses() {
         <strong>
           ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </strong>
+        {filtered.length !== expenseList.length && (
+          <Typography component="span" variant="caption" color="text.secondary" ml={1}>
+            ({filtered.length} of {expenseList.length} entries)
+          </Typography>
+        )}
       </Typography>
 
-      <Stack direction="row" spacing={1} mb={3} flexWrap="wrap" useFlexGap>
+      <Stack direction="row" spacing={1} mb={2} flexWrap="wrap" useFlexGap>
         <Chip
           label="All"
           onClick={() => setSelectedCategory(null)}
@@ -124,55 +131,69 @@ export default function Expenses() {
         ))}
       </Stack>
 
-      {grouped.length === 0 ? (
+      <TextField
+        size="small"
+        placeholder="Search description..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ mb: 2, width: 280 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon fontSize="small" />
+            </InputAdornment>
+          ),
+        }}
+      />
+
+      {filtered.length === 0 ? (
         <Typography color="text.secondary">No expenses found.</Typography>
       ) : (
-        grouped.map(([date, items]) => (
-          <Box key={date} mb={3}>
-            <Typography variant="subtitle2" color="text.secondary" mb={1}>
-              {new Date(date + 'T00:00:00').toLocaleDateString('en-IN', {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}
-            </Typography>
-            <Box
-              sx={{
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider',
-                overflow: 'hidden',
-              }}
-            >
-              {items.map((exp, idx) => {
+        <TableContainer
+          sx={{
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ '& th': { fontWeight: 600, color: 'text.secondary', fontSize: '0.75rem' } }}>
+                <TableCell>Date</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell>Category</TableCell>
+                <TableCell align="right">Amount</TableCell>
+                <TableCell padding="checkbox" />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filtered.map((exp) => {
                 const cat = catMap[exp.categoryId]
+                const dateStr = new Date(exp.date + 'T00:00:00').toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })
                 return (
-                  <Box key={exp.id}>
-                    {idx > 0 && <Divider />}
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      sx={{ px: 2, py: 1.5 }}
-                      spacing={2}
-                    >
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body1" fontWeight={500} noWrap>
-                          {exp.description || '—'}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {cat
-                            ? `${cat.icon ?? ''} ${cat.name}`.trim()
-                            : 'Uncategorised'}{' '}
-                          · {exp.paymentMethod}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body1" fontWeight={600} sx={{ flexShrink: 0 }}>
-                        ₹
-                        {(exp.amount || 0).toLocaleString('en-IN', {
-                          minimumFractionDigits: 2,
-                        })}
-                      </Typography>
+                  <TableRow
+                    key={exp.id}
+                    hover
+                    sx={{ cursor: 'pointer', '&:last-child td': { borderBottom: 0 } }}
+                    onClick={() => navigate(`/expenses/${exp.id}/edit`)}
+                  >
+                    <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary', fontSize: '0.8rem' }}>
+                      {dateStr}
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 500 }}>
+                      {exp.description || '—'}
+                    </TableCell>
+                    <TableCell sx={{ color: 'text.secondary', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      {cat ? `${cat.icon ?? ''} ${cat.name}`.trim() : 'Uncategorised'}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      ₹{(exp.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
                       <IconButton
                         size="small"
                         color="error"
@@ -181,13 +202,13 @@ export default function Expenses() {
                       >
                         <DeleteOutlineIcon fontSize="small" />
                       </IconButton>
-                    </Stack>
-                  </Box>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </Box>
-          </Box>
-        ))
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
     </Box>
   )
