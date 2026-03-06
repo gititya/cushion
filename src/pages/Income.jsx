@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -91,6 +92,10 @@ export default function Income() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+      <Alert severity="info" sx={{ mb: 2 }}>
+        Income data setup in progress — historical records coming soon.
+      </Alert>
+
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
         <Typography variant="h5" fontWeight={700}>
           Income

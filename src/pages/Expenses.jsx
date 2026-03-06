@@ -5,8 +5,12 @@ import {
   Button,
   Chip,
   CircularProgress,
+  FormControl,
   IconButton,
   InputAdornment,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -29,6 +33,7 @@ export default function Expenses() {
   const [expenseList, setExpenseList] = useState([])
   const [categoryList, setCategoryList] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(null)
+  const [selectedMonth, setSelectedMonth] = useState('')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -60,16 +65,34 @@ export default function Expenses() {
     [categoryList]
   )
 
+  const monthOptions = useMemo(() => {
+    const seen = new Set()
+    for (const e of expenseList) {
+      const [yyyy, mm] = e.date.split('-')
+      seen.add(`${yyyy}-${mm}`)
+    }
+    return Array.from(seen)
+      .sort((a, b) => b.localeCompare(a))
+      .map((key) => {
+        const [yyyy, mm] = key.split('-')
+        const label = new Date(Number(yyyy), Number(mm) - 1, 1).toLocaleDateString('en-IN', {
+          month: 'short',
+          year: 'numeric',
+        })
+        return { key, label }
+      })
+  }, [expenseList])
+
   const filtered = useMemo(() => {
-    let list = selectedCategory
-      ? expenseList.filter((e) => e.categoryId === selectedCategory)
-      : expenseList
+    let list = expenseList
+    if (selectedMonth) list = list.filter((e) => e.date.startsWith(selectedMonth))
+    if (selectedCategory) list = list.filter((e) => e.categoryId === selectedCategory)
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       list = list.filter((e) => e.description?.toLowerCase().includes(q))
     }
     return list
-  }, [expenseList, selectedCategory, search])
+  }, [expenseList, selectedMonth, selectedCategory, search])
 
   const total = useMemo(
     () => filtered.reduce((sum, e) => sum + (e.amount || 0), 0),
@@ -131,20 +154,35 @@ export default function Expenses() {
         ))}
       </Stack>
 
-      <TextField
-        size="small"
-        placeholder="Search description..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mb: 2, width: 280 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon fontSize="small" />
-            </InputAdornment>
-          ),
-        }}
-      />
+      <Stack direction="row" spacing={1} mb={2} alignItems="center">
+        <FormControl size="small" sx={{ width: 160 }}>
+          <InputLabel>Month</InputLabel>
+          <Select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            label="Month"
+          >
+            <MenuItem value="">All</MenuItem>
+            {monthOptions.map(({ key, label }) => (
+              <MenuItem key={key} value={key}>{label}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <TextField
+          size="small"
+          placeholder="Search description..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ width: 280 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Stack>
 
       {filtered.length === 0 ? (
         <Typography color="text.secondary">No expenses found.</Typography>

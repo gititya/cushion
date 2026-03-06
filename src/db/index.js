@@ -157,6 +157,20 @@ export const expenses = {
   async remove(docId) {
     return deleteDoc(doc(db, 'cushion_expenses', docId))
   },
+
+  async getByImportedFrom(uid, importedFrom) {
+    const q = query(
+      collection(db, 'cushion_expenses'),
+      where('userId', '==', uid),
+      where('importedFrom', '==', importedFrom)
+    )
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  },
+
+  async batchAdd(uid, items) {
+    await Promise.all(items.map((item) => expenses.add(uid, item)))
+  },
 }
 
 // ---------------------------------------------------------------------------
@@ -208,11 +222,16 @@ export const recurringItems = {
   async add(uid, data) {
     return addDoc(collection(db, 'cushion_recurring_items'), {
       userId: uid,
-      type: data.type,
+      type: data.type ?? 'expense',
       frequency: data.frequency,
-      nextDueDate: data.nextDueDate,
+      nextDueDate: data.nextDueDate ?? null,
       name: data.name,
       amount: data.amount,
+      isVariable: data.isVariable ?? false,
+      categoryId: data.categoryId ?? null,
+      paymentMethod: data.paymentMethod ?? null,
+      renewalMonth: data.renewalMonth ?? null,
+      frequencyMonths: data.frequencyMonths ?? null,
       reminderDaysBefore: data.reminderDaysBefore ?? null,
       isActive: data.isActive ?? true,
       notes: data.notes ?? null,
@@ -223,11 +242,16 @@ export const recurringItems = {
 
   async update(docId, data) {
     return updateDoc(doc(db, 'cushion_recurring_items', docId), {
-      type: data.type,
+      type: data.type ?? 'expense',
       frequency: data.frequency,
-      nextDueDate: data.nextDueDate,
+      nextDueDate: data.nextDueDate ?? null,
       name: data.name,
       amount: data.amount,
+      isVariable: data.isVariable ?? false,
+      categoryId: data.categoryId ?? null,
+      paymentMethod: data.paymentMethod ?? null,
+      renewalMonth: data.renewalMonth ?? null,
+      frequencyMonths: data.frequencyMonths ?? null,
       reminderDaysBefore: data.reminderDaysBefore ?? null,
       isActive: data.isActive,
       notes: data.notes ?? null,

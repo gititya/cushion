@@ -12,6 +12,7 @@ import ExpenseForm from './pages/ExpenseForm.jsx'
 import Categories from './pages/settings/Categories.jsx'
 import Income from './pages/Income.jsx'
 import IncomeForm from './pages/IncomeForm.jsx'
+import Recurring from './pages/Recurring.jsx'
 
 /**
  * App -- root router.
@@ -57,7 +58,7 @@ export default function App() {
               <Route path="/income" element={<Income />} />
               <Route path="/income/new" element={<IncomeForm />} />
               <Route path="/income/:id/edit" element={<IncomeForm />} />
-              <Route path="/recurring" element={<Placeholder name="Recurring Items" />} />
+              <Route path="/recurring" element={<Recurring />} />
               <Route path="/investments" element={<Placeholder name="Investments" />} />
               <Route path="/loans" element={<Placeholder name="Loans" />} />
               <Route path="/emis" element={<Placeholder name="EMIs" />} />

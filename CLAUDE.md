@@ -31,7 +31,7 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | `cushion_categories` | — | name, icon (emoji), color (hex), sortOrder, isActive |
 | `cushion_expenses` | — | date, amount, description, categoryId, paymentMethod, cardId, notes |
 | `cushion_income` | — | date, amount, source, notes |
-| `cushion_recurring_items` | — | name, amount, type, frequency, nextDueDate |
+| `cushion_recurring_items` | — | name, amount, isVariable, categoryId, frequency, frequencyMonths, renewalMonth, paymentMethod, nextDueDate, isActive |
 | `cushion_investments` | — | name, amountInvested, currentValue, type, platform |
 | `cushion_loans` | — | person, amount, dateGiven, expectedReturnDate, isReturned |
 | `cushion_emis` | — | merchant, emiAmount, cardId, monthsRemaining, startDate |
@@ -42,14 +42,15 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | Route | Component | Status |
 |---|---|---|
 | `/login` | `pages/login.jsx` | Done |
-| `/` | `pages/dashboard.jsx` | In progress |
+| `/` | `pages/dashboard.jsx` | Done (stat cards + 3-mode trend chart) |
 | `/expenses` | `pages/Expenses.jsx` | Done |
 | `/expenses/new` | `pages/ExpenseForm.jsx` | Done |
 | `/expenses/:id/edit` | `pages/ExpenseForm.jsx` | Done |
 | `/settings/categories` | `pages/settings/Categories.jsx` | Done |
-| `/income` | — | Placeholder |
-| `/income/new` | — | Placeholder |
-| `/recurring` | — | Placeholder |
+| `/income` | `pages/Income.jsx` | Done (CRUD + info banner) |
+| `/income/new` | `pages/IncomeForm.jsx` | Done |
+| `/income/:id/edit` | `pages/IncomeForm.jsx` | Done |
+| `/recurring` | `pages/Recurring.jsx` | Done |
 | `/investments` | — | Placeholder |
 | `/loans` | — | Placeholder |
 | `/emis` | — | Placeholder |
@@ -71,6 +72,19 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 - Reads from `scripts/data/transactions.csv`
 - Dry run by default; use `--commit` to write
 - Filters out any rows with date >= 2026-03-01
+
+## scripts/import_recurring.py
+- Reads from `scripts/data/Cushion - Recurring.csv` (3-section layout: monthly active, yearly active, inactive)
+- Dry run by default; use `--commit` to write
+- Maps category names to existing Firestore category IDs; creates missing ones
+- Writes to `cushion_recurring_items` with `importedFrom: 'csv_import_recurring'`
+
+## Recurring page notes
+- Gas is currently inactive in Firestore — to use it as every-N-months, edit it in the UI: set frequency to "Every N months", set interval, toggle Active
+- The `every_n_months` frequency + Occasional section is built but not currently used; it's there for when Gas (or similar items) are activated
+- "Every N months" not appearing in dropdown after code change → hard refresh or dev server restart
+- Variable monthly items (e.g. E-bill, Gas): mark as Variable + Monthly; enter actual amount each month in push drawer, enter 0 for months not due
+- Push to Transactions creates expenses with `importedFrom: 'recurring_push_YYYY-MM'`; to clean up test pushes, filter by "Recurring" category chip in /expenses and delete
 
 ## Code style
 - Functional components only, no class components
