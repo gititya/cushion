@@ -24,11 +24,16 @@ Update this line at the start of each session.
 2. Flat collections -- no subcollections, ever
 3. Prefix -- all collections are cushion_{name}
 4. userId -- first field on every Firestore document
-5. Aggregations -- src/analytics.js only, never inline in components
+5. Aggregations -- src/analytics.js for multi-collection aggregations only.
+   Simple page-level useMemo totals on already-fetched data are fine inline.
 6. Claude calls -- src/claude.js only, never inline in components
-7. No encryption -- data is stored as plaintext in Firestore. Do not use CryptoJS or any encryption layer.
-8. Categories and recurring items -- always live from Firestore, never hardcoded
-9. Scripts -- always run inside /venv
+7. No encryption -- data is stored as plaintext in Firestore.
+   Do not use CryptoJS or any encryption layer.
+8. DataContext -- all data access goes through useData() from
+   src/contexts/DataContext.jsx. Pages never call Firestore directly.
+   Mutations update both Firestore and the context optimistically.
+9. Categories and recurring items -- always live from DataContext, never hardcoded
+10. Scripts -- always run inside /venv
 
 ## Naming
 - Collections: cushion_expenses, cushion_credit_cards (snake_case plural)
@@ -44,6 +49,26 @@ Update this line at the start of each session.
 - Charts: Recharts with M3 colour palette
 - No heavy shadows -- M3 tinted surface elevation only
 
+### Typography scale
+- Page titles: variant="h6" fontWeight 700
+- Section labels: variant="subtitle2" fontWeight 700, letterSpacing 0.5
+- Table content and sidebar nav: variant="body2"
+- Secondary and meta text: variant="caption"
+
+### Case
+All UI text is lowercase -- page headings, nav labels, section headers,
+table column headers, dialog titles, CTAs, stat labels.
+Exception: user-entered data (descriptions, names) displayed exactly as entered.
+
+### Amounts
+Always format with maximumFractionDigits: 0. No trailing .00.
+Use toLocaleString('en-IN', { maximumFractionDigits: 0 }) everywhere.
+
+### Notes indicator
+Any table row or list item with a non-null notes field shows a 6px
+primary.light filled circle (borderRadius: '50%') next to the primary text,
+wrapped in a Tooltip showing the note text on hover.
+
 ## Git behaviour
 When the user says "push" or "push to main" or "push to [branch]":
 - Stage all changed files
@@ -57,41 +82,34 @@ Never push to main unless explicitly told to.
 Never ask "are you sure" -- just do it and confirm after.
 
 ## Communication style
-Before starting a task, give 2-3 sentences on what you are
-building and your approach. Enough context that a non-technical
-person understands what is about to happen and why.
+Lead with action, not narration. Skip the preamble unless the approach
+materially affects a decision the user needs to make.
 
-After completing, briefly confirm what was built and call out
-anything the user should know or decide -- e.g. a default you
-chose that they might want to change.
+After completing, give a tight summary -- one line per logical group of
+changes, not per file. Flag assumptions and decisions worth revisiting.
+Skip self-evident ones.
 
-If something is ambiguous, state your assumption and proceed.
-Do not ask. Flag the assumption at the end so the user can
-correct it if needed.
+If something is ambiguous, state your assumption and proceed. Flag it
+at the end. Do not stop to ask.
 
-If something fails, say what failed, why, and what you are
-trying next. One short paragraph.
-
-Never explain line by line. No jargon without a brief
-clarification. No excessive bullet points.
+If something fails, say what failed, why, and what you are trying next.
+One short paragraph.
 
 ## Autonomy
-Work autonomously. Do not ask for confirmation on individual
-files, folder names, or implementation details -- make the
-right call based on SKILL.md and the PRD and keep going.
+Work autonomously. Do not ask for confirmation on individual files,
+folder names, or implementation details -- make the right call based
+on SKILL.md and the PRD and keep going.
 
 Only stop and ask when:
 - You need a value not provided (API key, Firebase config)
 - You are about to do something irreversible (delete data, change schema)
 - You hit a genuine blocker you cannot resolve
 
-Otherwise just build and tell me what you did.
-
 ## Session startup -- do this before writing any code
-1. Read SKILL.md (this file)
+1. Read SKILL.md and CLAUDE.md
 2. Read the PRD at https://www.notion.so/31903a88e6bd81079704e95f8802b207
 3. Look at the existing codebase and determine what is built,
-   what is partial, and what is not started
+   what is partial, and what has not been started
 4. State your findings and propose what to work on next
 5. Wait for confirmation before writing any code
 
