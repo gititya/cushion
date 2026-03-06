@@ -11,7 +11,7 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 - **Firestore** — database, collections prefixed with `cushion_`
 - **React Router v6** — routing
 - **Recharts** — charts
-- **Anthropic SDK** — Claude AI integration (future use)
+- **Anthropic SDK** (`@anthropic-ai/sdk`) — Claude AI integration; used for NL expense parsing in `src/claude.js` with `dangerouslyAllowBrowser: true`
 
 ## Architecture rules
 - `src/db/index.js` is the **only file** that imports Firebase. All Firestore reads/writes go through it.
@@ -56,7 +56,7 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | `/loans` | — | Redirects to /assets |
 | `/emis` | — | Placeholder |
 | `/settings/cards` | — | Placeholder |
-| `/settings/budgets` | — | Placeholder |
+| `/settings/budgets` | `pages/settings/Budgets.jsx` | Done (progress bars, add/edit/delete) |
 | `/settings/webhooks` | — | Placeholder |
 | `/settings/account` | — | Placeholder |
 

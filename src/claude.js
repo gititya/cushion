@@ -5,8 +5,14 @@
  * Model: claude-haiku-4-5-20251001 for NL transaction parsing (Phase 1).
  */
 
-const CLAUDE_API_KEY = import.meta.env.VITE_CLAUDE_API_KEY
+import Anthropic from '@anthropic-ai/sdk'
+
 const HAIKU_MODEL = 'claude-haiku-4-5-20251001'
+
+const client = new Anthropic({
+  apiKey: import.meta.env.VITE_CLAUDE_API_KEY,
+  dangerouslyAllowBrowser: true,
+})
 
 // ---------------------------------------------------------------------------
 // Natural language transaction parser (Phase 1)
@@ -58,31 +64,19 @@ Rules:
 - If a card is mentioned by partial name, match to the closest card in the list
 - If no card is mentioned but paymentMethod is credit_card, set cardId to null`
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': CLAUDE_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-      'anthropic-dangerous-direct-browser-calls': 'true',
-    },
-    body: JSON.stringify({
-      model: HAIKU_MODEL,
-      max_tokens: 512,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: input }],
-    }),
+  const message = await client.messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: 512,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: input }],
   })
-
-  if (!response.ok) {
-    throw new Error(`Claude API error: ${response.status}`)
-  }
-
-  const data = await response.json()
-  const text = data.content?.[0]?.text ?? ''
+  const text = message.content?.[0]?.text ?? ''
+  console.log('[NL] raw text from Claude:', text)
 
   try {
-    return JSON.parse(text)
+    // Strip markdown code fences if Claude wraps the JSON
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+    return JSON.parse(cleaned)
   } catch {
     // Parse failed -- return null fields so the form stays open for manual entry
     return {

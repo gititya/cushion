@@ -10,6 +10,7 @@ import Dashboard from './pages/dashboard.jsx'
 import Expenses from './pages/Expenses.jsx'
 import ExpenseForm from './pages/ExpenseForm.jsx'
 import Categories from './pages/settings/Categories.jsx'
+import BudgetSettings from './pages/settings/Budgets.jsx'
 import Income from './pages/Income.jsx'
 import IncomeForm from './pages/IncomeForm.jsx'
 import Recurring from './pages/Recurring.jsx'
@@ -39,7 +40,7 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_relativeSplatPath: true }}>
           <Routes>
             {/* Public */}
             <Route path="/login" element={<Login />} />
@@ -66,7 +67,7 @@ export default function App() {
               <Route path="/emis" element={<Placeholder name="EMIs" />} />
               <Route path="/settings/categories" element={<Categories />} />
               <Route path="/settings/cards" element={<Placeholder name="Credit Cards" />} />
-              <Route path="/settings/budgets" element={<Placeholder name="Budgets" />} />
+              <Route path="/settings/budgets" element={<BudgetSettings />} />
               <Route path="/settings/webhooks" element={<Placeholder name="Webhooks" />} />
               <Route path="/settings/account" element={<Placeholder name="Account" />} />
             </Route>

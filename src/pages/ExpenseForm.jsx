@@ -110,10 +110,12 @@ export default function ExpenseForm() {
 
   async function handleNlParse() {
     if (!nlInput.trim()) return
+    console.log('[NL] parse triggered, input:', nlInput)
     setNlParsing(true)
     setNlError(null)
     try {
       const parsed = await parseExpenseNL(nlInput, categoryList, cardList)
+      console.log('[NL] parsed result:', parsed)
       setForm((prev) => ({
         ...prev,
         date: resolveDate(parsed.date) || prev.date,
@@ -123,7 +125,8 @@ export default function ExpenseForm() {
         paymentMethod: parsed.paymentMethod ?? prev.paymentMethod,
         cardId: parsed.cardId ?? prev.cardId,
       }))
-    } catch {
+    } catch (err) {
+      console.error('[NL] error:', err)
       setNlError('Could not reach Claude. Fill in the fields manually.')
     } finally {
       setNlParsing(false)
@@ -177,6 +180,7 @@ export default function ExpenseForm() {
                 endAdornment: (
                   <InputAdornment position="end" sx={{ alignSelf: 'flex-end', mb: 1 }}>
                     <Button
+                      type="button"
                       size="small"
                       variant="outlined"
                       onClick={handleNlParse}
