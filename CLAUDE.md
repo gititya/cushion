@@ -99,7 +99,7 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 1. ~~Settings > Cards (`/settings/cards`)~~ — **Done.** CRUD page, billing cycle countdown, card advisor tip in expense form.
 2. ~~Settings > Webhooks~~ — moved to Phase 3 (low actual friction; repayment drawer is sufficient)
 3. ~~Global AI explainer~~ — **Done.** Sparkle icon in dashboard header; dialog with free-text query; uses last 6mo spend + cards + budgets; `askFinancialQuestion()` in `claude.js`.
-4. Export — CSV/PDF of expenses
+4. ~~Export~~ — **Done.** CSV export on Expenses page; respects active filters; UTF-8 BOM for Google Sheets; filename derived from active month/category filter.
 5. Recurring auto-push — auto-push on due date instead of manual push drawer
 6. EMIs page (`/emis`) — low priority
 7. Income history import — low priority (`cushion_income` is currently empty)

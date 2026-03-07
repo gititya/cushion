@@ -24,6 +24,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { expenses, categories } from '../db/index.js'
@@ -55,6 +56,33 @@ export default function Expenses() {
     }
     load()
   }, [currentUser.uid])
+
+  function handleExport() {
+    const escapeField = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`
+    const headers = ['Date', 'Description', 'Category', 'Amount', 'Payment Method', 'Notes']
+    const rows = filtered.map((exp) => [
+      escapeField(exp.date),
+      escapeField(exp.description),
+      escapeField(catMap[exp.categoryId]?.name ?? 'Uncategorised'),
+      exp.amount ?? 0,
+      escapeField(exp.paymentMethod),
+      escapeField(exp.notes),
+    ])
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const selectedCatName = selectedCategory ? catMap[selectedCategory]?.name : null
+    const filename = selectedMonth
+      ? `expenses-${selectedMonth}.csv`
+      : selectedCatName
+      ? `expenses-${selectedCatName}.csv`
+      : 'expenses.csv'
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   async function handleDelete(id) {
     await expenses.remove(id)
@@ -114,13 +142,22 @@ export default function Expenses() {
         <Typography variant="h6" fontWeight={700}>
           expenses
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/expenses/new')}
-        >
-          Add
-        </Button>
+        <Stack direction="row" spacing={1} alignItems="center">
+          {filtered.length > 0 && (
+            <Tooltip title="Export CSV">
+              <IconButton onClick={handleExport} size="small">
+                <FileDownloadOutlinedIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/expenses/new')}
+          >
+            Add
+          </Button>
+        </Stack>
       </Stack>
 
       <Typography variant="subtitle1" color="text.secondary" mb={2}>
