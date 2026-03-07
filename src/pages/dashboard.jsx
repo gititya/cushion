@@ -5,6 +5,8 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Dialog,
+  DialogContent,
   LinearProgress,
   Popover,
   Stack,
@@ -21,6 +23,7 @@ import {
   IconButton,
   Typography,
 } from '@mui/material'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import {
   AreaChart,
   Area,
@@ -32,7 +35,8 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useAuth } from '../contexts/AuthContext.jsx'
-import { expenses, categories, investments as investmentsDB, loans as loansDB, budgets as budgetsDB, trendNotes as trendNotesDB } from '../db/index.js'
+import { expenses, categories, investments as investmentsDB, loans as loansDB, budgets as budgetsDB, trendNotes as trendNotesDB, creditCards as creditCardsDB } from '../db/index.js'
+import { askFinancialQuestion } from '../claude.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -385,6 +389,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [chartMode, setChartMode] = useState('category')
   const [selectedMonthIdx, setSelectedMonthIdx] = useState(12)
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiQuery, setAiQuery] = useState('')
+  const [aiResponse, setAiResponse] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiCards, setAiCards] = useState([])
+  const [aiCardsFetched, setAiCardsFetched] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -515,6 +525,48 @@ export default function Dashboard() {
     trendNotesDB.remove(key).catch(console.error)
   }
 
+  async function handleAiOpen() {
+    setAiOpen(true)
+    setAiResponse('')
+    setAiQuery('')
+    if (!aiCardsFetched) {
+      try {
+        const cards = await creditCardsDB.getAll(currentUser.uid)
+        setAiCards(cards)
+        setAiCardsFetched(true)
+      } catch (err) {
+        console.error('AI: failed to load cards', err)
+      }
+    }
+  }
+
+  function handleAiClose() {
+    setAiOpen(false)
+    setAiQuery('')
+    setAiResponse('')
+  }
+
+  async function handleAiSubmit() {
+    if (!aiQuery.trim() || aiLoading) return
+    setAiLoading(true)
+    setAiResponse('')
+    try {
+      const answer = await askFinancialQuestion(aiQuery.trim(), {
+        monthlyData,
+        months,
+        categories: categoryList,
+        cards: aiCards,
+        budgets: budgetList,
+      })
+      setAiResponse(answer)
+    } catch (err) {
+      console.error('AI question error:', err)
+      setAiResponse('Sorry, something went wrong. Please try again.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
@@ -529,7 +581,14 @@ export default function Dashboard() {
     <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
         <Typography variant="h6" fontWeight={700}>dashboard</Typography>
-        <Stack direction="row" alignItems="center" spacing={0.5}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <MuiTooltip title="ask AI">
+            <IconButton size="small" onClick={handleAiOpen}
+              sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+              <AutoAwesomeIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </MuiTooltip>
+          <Stack direction="row" alignItems="center" spacing={0.5}>
           <IconButton size="small" disabled={selectedMonthIdx === 0}
             onClick={() => setSelectedMonthIdx(i => i - 1)}
             sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>‹</IconButton>
@@ -539,6 +598,7 @@ export default function Dashboard() {
           <IconButton size="small" disabled={selectedMonthIdx === months.length - 1}
             onClick={() => setSelectedMonthIdx(i => i + 1)}
             sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>›</IconButton>
+          </Stack>
         </Stack>
       </Stack>
 
@@ -681,6 +741,33 @@ export default function Dashboard() {
           </Stack>
         </Box>
       </Popover>
+
+      <Dialog open={aiOpen} onClose={handleAiClose} maxWidth="sm" fullWidth>
+        <DialogContent sx={{ pt: 2.5 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            placeholder="ask anything…"
+            value={aiQuery}
+            onChange={(e) => setAiQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleAiSubmit()
+              }
+            }}
+            InputProps={{
+              endAdornment: aiLoading ? <CircularProgress size={16} sx={{ mr: 1 }} /> : null,
+            }}
+          />
+          {aiResponse && (
+            <Box sx={{ mt: 2, maxHeight: 200, overflowY: 'auto' }}>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{aiResponse}</Typography>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </Box>
   )

@@ -89,3 +89,67 @@ Rules:
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Financial Q&A (Phase 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Answer a natural language financial question using dashboard context.
+ *
+ * @param {string} query - User's question
+ * @param {Object} ctx
+ *   @param {Array} ctx.monthlyData - [{ ym, total, byCat }] last 6 months
+ *   @param {Array} ctx.months - all month strings (YYYY-MM)
+ *   @param {Array} ctx.categories - [{ id, name }]
+ *   @param {Array} ctx.cards - [{ id, name, network, cashbackCategories, rewardPointsRate }]
+ *   @param {Array} ctx.budgets - [{ categoryId, monthlyLimit }]
+ * @returns {string} Plain text answer
+ */
+export async function askFinancialQuestion(query, { monthlyData, months, categories, cards, budgets }) {
+  const last6 = monthlyData.slice(-6)
+
+  const catById = Object.fromEntries(categories.map((c) => [c.id, c.name]))
+
+  const spendSummary = last6.map(({ ym, total, byCat }) => ({
+    month: ym,
+    total: Math.round(total),
+    byCategory: Object.fromEntries(
+      Object.entries(byCat).map(([id, amt]) => [catById[id] || id, Math.round(amt)])
+    ),
+  }))
+
+  const cardSummary = cards.map((c) => ({
+    name: c.name,
+    network: c.network,
+    cashbackCategories: c.cashbackCategories,
+    rewardPointsRate: c.rewardPointsRate,
+  }))
+
+  const budgetSummary = budgets.map((b) => ({
+    category: catById[b.categoryId] || b.categoryId,
+    monthlyLimit: b.monthlyLimit,
+  }))
+
+  const systemPrompt = `You are a personal finance assistant for a single user in India. All amounts are in Indian rupees (₹).
+Answer the user's question concisely in plain text only — no markdown, no bullet points, no headers.
+Keep your answer to 2-4 sentences. Be direct and specific with numbers where relevant.
+
+Monthly spend data (last 6 months):
+${JSON.stringify(spendSummary, null, 2)}
+
+Credit cards available:
+${JSON.stringify(cardSummary, null, 2)}
+
+Budget limits by category:
+${JSON.stringify(budgetSummary, null, 2)}`
+
+  const message = await client.messages.create({
+    model: HAIKU_MODEL,
+    max_tokens: 400,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: query }],
+  })
+
+  return message.content?.[0]?.text?.trim() ?? 'Sorry, I could not generate a response.'
+}

@@ -57,7 +57,7 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 | `/emis` | — | Placeholder |
 | `/settings/cards` | — | Placeholder |
 | `/settings/budgets` | `pages/settings/Budgets.jsx` | Done (progress bars, add/edit/delete) |
-| `/settings/webhooks` | — | Placeholder (Phase 2) |
+| `/settings/webhooks` | — | Placeholder (Phase 3) |
 | `/settings/account` | — | Placeholder (cut — not needed) |
 
 ## Data
@@ -96,18 +96,20 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 ## Roadmap
 
 ### Phase 2 (in priority order)
-1. Settings > Cards (`/settings/cards`) — unlocks credit card dropdown in expense form + NL parsing
-2. Settings > Webhooks (`/settings/webhooks`) — Google Sheets pull for "Hers" loan balance
-3. Dashboard enhancements — month selector, spending by category chart, recent transactions widget
-4. Notifications / alerts — budget 80%/100% delivery (alertAt80/alertAt100 flags already in Firestore)
-5. Export — CSV/PDF of expenses
-6. Recurring auto-push — auto-push on due date instead of manual push drawer
-7. Multi-month budget tracking — historical budget vs actual
-8. EMIs page (`/emis`) — low priority
-9. Income history import — low priority (`cushion_income` is currently empty)
+1. ~~Settings > Cards (`/settings/cards`)~~ — **Done.** CRUD page, billing cycle countdown, card advisor tip in expense form.
+2. ~~Settings > Webhooks~~ — moved to Phase 3 (low actual friction; repayment drawer is sufficient)
+3. ~~Global AI explainer~~ — **Done.** Sparkle icon in dashboard header; dialog with free-text query; uses last 6mo spend + cards + budgets; `askFinancialQuestion()` in `claude.js`.
+4. Export — CSV/PDF of expenses
+5. Recurring auto-push — auto-push on due date instead of manual push drawer
+6. EMIs page (`/emis`) — low priority
+7. Income history import — low priority (`cushion_income` is currently empty)
+~~Dashboard enhancements~~ — month selector done; category chart + recent transactions cut
+~~Notifications / alerts~~ — cut (visual progress bars sufficient)
+~~Multi-month budget tracking~~ — cut (heatmap table sufficient)
 
 ### Phase 3
 - DataContext global cache (onSnapshot) — deferred deliberately; pages call db/index.js directly until then. Build at Phase 3 start before PWA work. At ~73 expenses/month, lag becomes noticeable around 2,500–3,500 docs (~mid-2027 to early 2028), which aligns with Phase 3 timing.
+- Settings > Webhooks — Google Sheets pull for "Hers" loan balance (low friction to defer; repayment drawer is sufficient until then)
 - Mobile PWA (install to home screen, offline support)
 - Trip / vacation tagging (`tripId` already on expense docs, no UI yet)
 
