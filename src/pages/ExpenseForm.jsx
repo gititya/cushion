@@ -227,21 +227,31 @@ export default function ExpenseForm() {
             fullWidth
           />
 
-          <FormControl fullWidth required>
-            <InputLabel>Category</InputLabel>
-            <Select
-              name="categoryId"
-              value={form.categoryId}
-              label="Category"
-              onChange={handleChange}
-            >
-              {categoryList.map((cat) => (
-                <MenuItem key={cat.id} value={cat.id}>
-                  {`${cat.icon ?? ''} ${cat.name}`.trim()}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box>
+            <FormControl fullWidth required>
+              <InputLabel>Category</InputLabel>
+              <Select
+                name="categoryId"
+                value={form.categoryId}
+                label="Category"
+                onChange={handleChange}
+              >
+                {categoryList.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {`${cat.icon ?? ''} ${cat.name}`.trim()}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {form.categoryId && (() => {
+              const advice = categoryList.find((c) => c.id === form.categoryId)?.cardAdvice
+              return advice ? (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75, ml: 0.5 }}>
+                  💡 {advice}
+                </Typography>
+              ) : null
+            })()}
+          </Box>
 
           <FormControl fullWidth required>
             <InputLabel>Payment Method</InputLabel>

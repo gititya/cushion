@@ -22,7 +22,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import { categories, budgets } from '../../db/index.js'
 
-const EMPTY_FORM = { name: '', icon: '', color: '#6750A4', monthlyLimit: '' }
+const EMPTY_FORM = { name: '', icon: '', color: '#6750A4', monthlyLimit: '', cardAdvice: '' }
 
 export default function Categories() {
   const { currentUser } = useAuth()
@@ -70,6 +70,7 @@ export default function Categories() {
       icon: cat.icon ?? '',
       color: cat.color ?? '#6750A4',
       monthlyLimit: existing ? String(existing.monthlyLimit) : '',
+      cardAdvice: cat.cardAdvice ?? '',
     })
     setPickerOpen(false)
     setDialogOpen(true)
@@ -88,9 +89,14 @@ export default function Categories() {
         name: form.name,
         icon: form.icon,
         color: form.color,
+        cardAdvice: form.cardAdvice || null,
       })
       setList((prev) =>
-        prev.map((c) => (c.id === editing.id ? { ...c, name: form.name, icon: form.icon, color: form.color } : c))
+        prev.map((c) =>
+          c.id === editing.id
+            ? { ...c, name: form.name, icon: form.icon, color: form.color, cardAdvice: form.cardAdvice || null }
+            : c
+        )
       )
       // Upsert or remove budget
       const existing = budgetMap[editing.id]
@@ -112,10 +118,11 @@ export default function Categories() {
         icon: form.icon,
         color: form.color,
         sortOrder: list.length,
+        cardAdvice: form.cardAdvice || null,
       })
       setList((prev) => [
         ...prev,
-        { id: ref.id, name: form.name, icon: form.icon, color: form.color, sortOrder: list.length, isActive: true },
+        { id: ref.id, name: form.name, icon: form.icon, color: form.color, sortOrder: list.length, isActive: true, cardAdvice: form.cardAdvice || null },
       ])
       // Add budget if limit set
       if (limitVal != null) {
@@ -327,6 +334,17 @@ export default function Categories() {
               onChange={handleChange}
               fullWidth
               placeholder="Leave blank for no limit"
+            />
+            <TextField
+              label="Card advice"
+              name="cardAdvice"
+              value={form.cardAdvice}
+              onChange={handleChange}
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="e.g. Swiggy → HDFC Swiggy | Zomato → Tata Neu"
+              helperText="Shown as a tip when this category is selected in the expense form"
             />
           </Stack>
         </DialogContent>

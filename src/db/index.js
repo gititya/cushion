@@ -17,6 +17,7 @@ import {
   getDoc,
   getDocs,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -98,6 +99,7 @@ export const categories = {
       color: data.color ?? null,
       sortOrder: data.sortOrder ?? 0,
       isActive: data.isActive ?? true,
+      cardAdvice: data.cardAdvice ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
@@ -381,6 +383,7 @@ export const creditCards = {
       userId: uid,
       name: data.name,
       network: data.network,
+      billingCycle: data.billingCycle ?? null,
       cashbackCategories: data.cashbackCategories ?? [],
       rewardPointsRate: data.rewardPointsRate ?? null,
       travelBenefits: data.travelBenefits ?? null,
@@ -395,6 +398,7 @@ export const creditCards = {
     return updateDoc(doc(db, 'cushion_credit_cards', docId), {
       name: data.name,
       network: data.network,
+      billingCycle: data.billingCycle ?? null,
       cashbackCategories: data.cashbackCategories ?? [],
       rewardPointsRate: data.rewardPointsRate ?? null,
       travelBenefits: data.travelBenefits ?? null,
@@ -484,5 +488,24 @@ export const budgets = {
 
   async remove(docId) {
     return deleteDoc(doc(db, 'cushion_budgets', docId))
+  },
+}
+
+// ---------------------------------------------------------------------------
+// cushion_trend_notes
+// Schema: { userId, categoryId, month (YYYY-MM), note, updatedAt }
+// Doc ID: deterministic `${categoryId}_${month}` — enables single-op upsert
+// ---------------------------------------------------------------------------
+
+export const trendNotes = {
+  async getAll(uid) {
+    return getAll('cushion_trend_notes', uid)
+  },
+  async set(uid, categoryId, month, note) {
+    const ref = doc(db, 'cushion_trend_notes', `${categoryId}_${month}`)
+    return setDoc(ref, { userId: uid, categoryId, month, note, updatedAt: serverTimestamp() })
+  },
+  async remove(docId) {
+    return deleteDoc(doc(db, 'cushion_trend_notes', docId))
   },
 }

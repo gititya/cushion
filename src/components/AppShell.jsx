@@ -21,7 +21,7 @@ import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalance
 import AutorenewIcon from '@mui/icons-material/Autorenew'
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
@@ -37,7 +37,8 @@ const navItems = [
 ]
 
 const settingsItems = [
-  { label: 'settings', path: '/settings/categories', icon: <SettingsOutlinedIcon /> },
+  { label: 'categories', path: '/settings/categories', icon: <CategoryOutlinedIcon /> },
+  { label: 'cards', path: '/settings/cards', icon: <CreditCardOutlinedIcon /> },
 ]
 
 export default function AppShell() {
@@ -99,6 +100,12 @@ export default function AppShell() {
       </List>
 
       <Divider />
+
+      <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+          settings
+        </Typography>
+      </Box>
 
       {/* Settings + logout */}
       <List>

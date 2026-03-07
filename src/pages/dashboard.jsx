@@ -1,9 +1,12 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
   Box,
+  Button,
   Card,
   CardContent,
   CircularProgress,
+  LinearProgress,
+  Popover,
   Stack,
   Table,
   TableBody,
@@ -11,8 +14,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip as MuiTooltip,
+  IconButton,
   Typography,
 } from '@mui/material'
 import {
@@ -26,7 +32,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useAuth } from '../contexts/AuthContext.jsx'
-import { expenses, categories, investments as investmentsDB, loans as loansDB } from '../db/index.js'
+import { expenses, categories, investments as investmentsDB, loans as loansDB, budgets as budgetsDB, trendNotes as trendNotesDB } from '../db/index.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -40,6 +46,11 @@ function lastNMonths(n) {
     months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
   return months
+}
+
+function fmtMonthLong(ym) {
+  const [y, m] = ym.split('-')
+  return new Date(+y, +m - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
 }
 
 function fmtMonthLabel(ym) {
@@ -95,7 +106,7 @@ function ProportionTooltip({ active, payload, label }) {
   )
 }
 
-function CategoryTable({ monthlyData, activeCatIds, catMap }) {
+function CategoryTable({ monthlyData, activeCatIds, catMap, budgetMap, noteMap, onCellClick, selectedMonthYm }) {
   const rows = useMemo(() => {
     return activeCatIds
       .map((catId) => {
@@ -109,14 +120,74 @@ function CategoryTable({ monthlyData, activeCatIds, catMap }) {
       .sort((a, b) => b.total - a.total)
   }, [activeCatIds, catMap, monthlyData])
 
-  const globalMax = useMemo(
-    () => Math.max(...activeCatIds.flatMap((catId) => monthlyData.map((d) => d.byCat[catId] || 0))),
-    [activeCatIds, monthlyData]
-  )
+  // Budget strip data — selected month spend per category
+  // Show: any category with selected month spend, plus any category with a budget set
+  const stripItems = useMemo(() => {
+    const current = monthlyData.find((d) => d.ym === selectedMonthYm)
+    if (!current) return []
+    return rows
+      .map(({ catId, cat }) => {
+        const spent = current.byCat[catId] || 0
+        const limit = budgetMap[catId]
+        const hasBudget = !!limit && limit > 0
+        const pct = hasBudget ? (spent / limit) * 100 : 0
+        return { catId, cat, spent, pct, hasBudget }
+      })
+      .filter((r) => r.spent > 0 || r.hasBudget)
+  }, [rows, monthlyData, budgetMap])
 
   return (
     <>
-      <TableContainer sx={{ maxHeight: 380, overflow: 'auto' }}>
+      {/* Budget health strip */}
+      <Box sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ pb: 1 }}>
+          {stripItems.map(({ catId, cat, spent, pct, hasBudget }) => (
+            <Box
+              key={catId}
+              sx={{
+                minWidth: 120,
+                p: 1.5,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+              }}
+            >
+              <Typography variant="caption" color="text.secondary" noWrap display="block">
+                {cat.icon} {cat.name}
+              </Typography>
+              <Typography variant="body2" fontWeight={700}>
+                {fmtRupeeFull(spent)}
+              </Typography>
+              <LinearProgress
+                variant="determinate"
+                value={hasBudget ? Math.min(pct, 100) : 100}
+                sx={{
+                  height: 4,
+                  borderRadius: 2,
+                  mt: 0.75,
+                  mb: 0.5,
+                  bgcolor: 'grey.200',
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: !hasBudget
+                      ? 'grey.400'
+                      : pct >= 100
+                      ? 'error.main'
+                      : pct >= 80
+                      ? '#ff8f00'
+                      : 'success.main',
+                  },
+                }}
+              />
+              <Typography variant="caption" color={hasBudget ? 'text.secondary' : 'text.disabled'}>
+                {hasBudget ? `${Math.round(pct)}% of budget` : 'no budget'}
+              </Typography>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
+
+      <TableContainer sx={{ overflow: 'auto' }}>
         <Table size="small" stickyHeader sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
@@ -136,18 +207,20 @@ function CategoryTable({ monthlyData, activeCatIds, catMap }) {
                 <TableCell
                   key={d.ym}
                   align="right"
-                  sx={{ fontWeight: 600, whiteSpace: 'nowrap', fontSize: 11 }}
+                  sx={{
+                    fontWeight: d.ym === selectedMonthYm ? 700 : 600,
+                    whiteSpace: 'nowrap',
+                    fontSize: 11,
+                    color: d.ym === selectedMonthYm ? '#6750A4' : 'inherit',
+                  }}
                 >
                   {fmtMonthLabel(d.ym)}
                 </TableCell>
               ))}
-              <TableCell align="right" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                Total
-              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map(({ catId, cat, total }) => (
+            {rows.map(({ catId, cat }) => (
               <TableRow key={catId} hover>
                 <TableCell
                   sx={{
@@ -164,55 +237,132 @@ function CategoryTable({ monthlyData, activeCatIds, catMap }) {
                 </TableCell>
                 {monthlyData.map((d) => {
                   const amt = d.byCat[catId] || 0
-                  const intensity = globalMax > 0 ? amt / globalMax : 0
-                  const alpha = amt > 0 ? Math.round(intensity * 52 + 8) : 0
-                  const alphaHex = alpha.toString(16).padStart(2, '0')
+                  const limit = budgetMap[catId]
+                  const hasBudget = !!limit && limit > 0
+                  const pct = hasBudget ? (amt / limit) * 100 : 0
+                  const noteKey = `${catId}_${d.ym}`
+                  const hasNote = !!noteMap[noteKey]
+
+                  let cellBg = 'transparent'
+                  if (hasBudget && amt > 0) {
+                    if (pct >= 100) cellBg = 'rgba(211,47,47,0.12)'
+                    else if (pct >= 80) cellBg = 'rgba(255,143,0,0.15)'
+                    else cellBg = 'rgba(46,125,50,0.10)'
+                  }
+
+                  const budgetStr = hasBudget && amt > 0
+                    ? `${fmtRupeeFull(amt)} of ${fmtRupeeFull(limit)} (${Math.round(pct)}%)`
+                    : null
+                  const noteStr = hasNote ? noteMap[noteKey].note : null
+                  const tooltipTitle = budgetStr || noteStr
+                    ? <>{budgetStr && <div>{budgetStr}</div>}{noteStr && <div style={{ fontStyle: 'italic', marginTop: budgetStr ? 4 : 0 }}>{noteStr}</div>}</>
+                    : ''
+
                   return (
                     <TableCell
                       key={d.ym}
                       align="right"
+                      onClick={(e) => onCellClick(e, catId, d.ym)}
                       sx={{
                         fontSize: 11,
-                        bgcolor: amt > 0 ? `#FF8F00${alphaHex}` : 'transparent',
+                        bgcolor: cellBg,
                         color: amt > 0 ? 'text.primary' : 'text.disabled',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        '&:hover': { boxShadow: 'inset 0 0 0 1px rgba(103,80,164,0.35)' },
                       }}
                     >
-                      {amt > 0 ? fmtRupeeShort(amt) : '—'}
+                      <MuiTooltip title={tooltipTitle} placement="top">
+                        <span>{amt > 0 ? fmtRupeeShort(amt) : '—'}</span>
+                      </MuiTooltip>
+                      {hasNote && (
+                        <Box sx={{
+                          position: 'absolute', top: 3, right: 3,
+                          width: 5, height: 5, borderRadius: '50%',
+                          bgcolor: '#6750A4', pointerEvents: 'none',
+                        }} />
+                      )}
                     </TableCell>
                   )
                 })}
-                <TableCell align="right" sx={{ fontWeight: 600, fontSize: 11 }}>
-                  {fmtRupeeShort(total)}
-                </TableCell>
               </TableRow>
             ))}
+          </TableBody>
+          <TableBody>
+            <TableRow sx={{ '& td': { borderTop: '2px solid', borderColor: 'divider' } }}>
+              <TableCell sx={{ position: 'sticky', left: 0, zIndex: 2, bgcolor: 'background.paper', fontWeight: 700, fontSize: 12 }}>
+                Total
+              </TableCell>
+              {monthlyData.map((d) => (
+                <TableCell key={d.ym} align="right"
+                  sx={{ fontWeight: 700, fontSize: 11, color: d.ym === selectedMonthYm ? '#6750A4' : 'inherit' }}>
+                  {d.total > 0 ? fmtRupeeShort(d.total) : '—'}
+                </TableCell>
+              ))}
+            </TableRow>
           </TableBody>
         </Table>
       </TableContainer>
       <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-        Shade intensity = spend relative to highest category-month in this period
+        <Box component="span" sx={{ color: 'success.main' }}>●</Box> under budget
+        {' · '}
+        <Box component="span" sx={{ color: '#ff8f00' }}>●</Box> near limit (80%+)
+        {' · '}
+        <Box component="span" sx={{ color: 'error.main' }}>●</Box> over budget
+        {' · '}
+        click any cell to add a note
       </Typography>
     </>
   )
 }
 
-function StatCard({ label, value, valueColor, sub }) {
+const CARD_GRADIENTS = {
+  default: {
+    background: 'linear-gradient(140deg, #f0ecff 0%, #ebe5ff 60%, #e4dafa 100%)',
+    label: '#79747e',
+    value: '#1c1b1f',
+    sub: '#79747e',
+  },
+  up: {
+    background: 'linear-gradient(140deg, #fff8ed 0%, #feefd4 60%, #fde3b8 100%)',
+    label: '#7c5800',
+    value: '#4a3500',
+    sub: '#7c5800',
+  },
+  down: {
+    background: 'linear-gradient(140deg, #e8faf2 0%, #d6f5e5 60%, #c5eed8 100%)',
+    label: '#1a5c38',
+    value: '#0d3320',
+    sub: '#1a5c38',
+  },
+}
+
+function StatCard({ label, value, sub, variant = 'default' }) {
+  const g = CARD_GRADIENTS[variant] || CARD_GRADIENTS.default
   return (
-    <Card variant="outlined" sx={{ flex: 1, minWidth: 180 }}>
-      <CardContent>
-        <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-          {label}
+    <Box
+      sx={{
+        flex: 1,
+        minWidth: 180,
+        borderRadius: '20px',
+        p: '22px',
+        background: g.background,
+        boxShadow:
+          'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(103,80,164,0.08), 0 8px 24px rgba(103,80,164,0.07)',
+      }}
+    >
+      <Typography variant="caption" display="block" mb={0.5} sx={{ color: g.label }}>
+        {label}
+      </Typography>
+      <Typography variant="h6" fontWeight={700} sx={{ color: g.value }}>
+        {value}
+      </Typography>
+      {sub && (
+        <Typography variant="caption" sx={{ color: g.sub }}>
+          {sub}
         </Typography>
-        <Typography variant="h6" fontWeight={700} color={valueColor || 'text.primary'}>
-          {value}
-        </Typography>
-        {sub && (
-          <Typography variant="caption" color="text.secondary">
-            {sub}
-          </Typography>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </Box>
   )
 }
 
@@ -220,25 +370,39 @@ function StatCard({ label, value, valueColor, sub }) {
 // Dashboard
 // ---------------------------------------------------------------------------
 
+const EXCLUDE_TOP_CAT = new Set(['investment', 'house rent'])
+
 export default function Dashboard() {
   const { currentUser } = useAuth()
   const [expenseList, setExpenseList] = useState([])
   const [categoryList, setCategoryList] = useState([])
   const [assetsTotal, setAssetsTotal] = useState(null)
+  const [budgetList, setBudgetList] = useState([])
+  const [noteMap, setNoteMap] = useState({})
+  const [noteAnchor, setNoteAnchor] = useState(null)
+  const [noteTarget, setNoteTarget] = useState(null)
+  const [noteText, setNoteText] = useState('')
   const [loading, setLoading] = useState(true)
   const [chartMode, setChartMode] = useState('category')
+  const [selectedMonthIdx, setSelectedMonthIdx] = useState(12)
 
   useEffect(() => {
     async function load() {
       try {
-        const [exps, cats, invs, lns] = await Promise.all([
+        const [exps, cats, invs, lns, bdgs, nts] = await Promise.all([
           expenses.getAll(currentUser.uid),
           categories.getAll(currentUser.uid),
           investmentsDB.getAll(currentUser.uid),
           loansDB.getAll(currentUser.uid),
+          budgetsDB.getAll(currentUser.uid),
+          trendNotesDB.getAll(currentUser.uid).catch(() => []),
         ])
         setExpenseList(exps)
         setCategoryList(cats)
+        setBudgetList(bdgs)
+        const nm = {}
+        for (const n of nts) nm[`${n.categoryId}_${n.month}`] = n
+        setNoteMap(nm)
 
         const invTotal = invs.filter((i) => i.type !== 'fd').reduce((s, i) => s + (i.currentValue || 0), 0)
         const fdTotal = invs.filter((i) => i.type === 'fd' && i.status === 'in_progress').reduce((s, i) => s + (i.currentValue || 0), 0)
@@ -261,6 +425,11 @@ export default function Dashboard() {
     [categoryList]
   )
 
+  const budgetMap = useMemo(
+    () => Object.fromEntries(budgetList.filter((b) => b.isActive).map((b) => [b.categoryId, b.monthlyLimit])),
+    [budgetList]
+  )
+
   const months = useMemo(() => lastNMonths(13), [])
 
   // Per-month totals + per-category breakdown
@@ -278,9 +447,9 @@ export default function Dashboard() {
     [expenseList, months]
   )
 
-  const currentMonth = monthlyData[monthlyData.length - 1]
-  const prevMonth = monthlyData[monthlyData.length - 2]
-  const delta = currentMonth.total - prevMonth.total
+  const selectedMonthData = monthlyData[selectedMonthIdx]
+  const prevMonthData = monthlyData[selectedMonthIdx - 1]
+  const delta = prevMonthData ? selectedMonthData.total - prevMonthData.total : 0
 
   // All category IDs that appear in any expense
   const activeCatIds = useMemo(() => {
@@ -311,17 +480,40 @@ export default function Dashboard() {
     })
   }, [monthlyData, chartMode, activeCatIds, catMap])
 
-  // Current month categories sorted by spend
+  // Selected month categories sorted by spend
   const currentCatBreakdown = useMemo(() => {
     return activeCatIds
       .map((catId) => ({
         name: catMap[catId]?.name || 'Unknown',
         color: catMap[catId]?.color || '#90A4AE',
-        amount: currentMonth.byCat[catId] || 0,
+        amount: selectedMonthData.byCat[catId] || 0,
       }))
-      .filter((x) => x.amount > 0)
+      .filter((x) => x.amount > 0 && !EXCLUDE_TOP_CAT.has(x.name.toLowerCase()))
       .sort((a, b) => b.amount - a.amount)
-  }, [currentMonth, activeCatIds, catMap])
+  }, [selectedMonthData, activeCatIds, catMap])
+
+  function handleCellClick(e, catId, ym) {
+    setNoteAnchor(e.currentTarget)
+    setNoteTarget({ catId, ym })
+    setNoteText(noteMap[`${catId}_${ym}`]?.note || '')
+  }
+  function handleNoteClose() { setNoteAnchor(null); setNoteTarget(null); setNoteText('') }
+  function handleNoteSave() {
+    if (!noteTarget || !noteText.trim()) return
+    const { catId, ym } = noteTarget
+    const key = `${catId}_${ym}`
+    setNoteMap((prev) => ({ ...prev, [key]: { id: key, categoryId: catId, month: ym, note: noteText.trim() } }))
+    handleNoteClose()
+    trendNotesDB.set(currentUser.uid, catId, ym, noteText.trim()).catch(console.error)
+  }
+  function handleNoteDelete() {
+    if (!noteTarget) return
+    const { catId, ym } = noteTarget
+    const key = `${catId}_${ym}`
+    setNoteMap((prev) => { const n = { ...prev }; delete n[key]; return n })
+    handleNoteClose()
+    trendNotesDB.remove(key).catch(console.error)
+  }
 
   if (loading) {
     return (
@@ -331,33 +523,39 @@ export default function Dashboard() {
     )
   }
 
-  const currentMonthLabel = new Date().toLocaleDateString('en-IN', {
-    month: 'long',
-    year: 'numeric',
-  })
   const deltaSign = delta >= 0 ? '+' : ''
-  const deltaColor = delta <= 0 ? 'success.main' : 'error.main'
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1100, mx: 'auto' }}>
-      <Typography variant="h6" fontWeight={700} mb={3}>
-        dashboard
-      </Typography>
+    <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
+        <Typography variant="h6" fontWeight={700}>dashboard</Typography>
+        <Stack direction="row" alignItems="center" spacing={0.5}>
+          <IconButton size="small" disabled={selectedMonthIdx === 0}
+            onClick={() => setSelectedMonthIdx(i => i - 1)}
+            sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>‹</IconButton>
+          <Typography variant="body2" sx={{ width: 124, textAlign: 'center', fontWeight: 500 }}>
+            {fmtMonthLong(selectedMonthData.ym)}
+          </Typography>
+          <IconButton size="small" disabled={selectedMonthIdx === months.length - 1}
+            onClick={() => setSelectedMonthIdx(i => i + 1)}
+            sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>›</IconButton>
+        </Stack>
+      </Stack>
 
       {/* ── Stat cards ── */}
       <Stack direction="row" spacing={2} mb={4} flexWrap="wrap" useFlexGap>
         <StatCard
-          label={`spent in ${currentMonthLabel}`}
-          value={fmtRupeeFull(currentMonth.total)}
-          sub={`${currentMonth.count} transactions`}
+          label={`spent in ${fmtMonthLong(selectedMonthData.ym)}`}
+          value={fmtRupeeFull(selectedMonthData.total)}
+          sub={`${selectedMonthData.count} transactions`}
         />
         <StatCard
           label="vs last month"
           value={`${deltaSign}${fmtRupeeFull(Math.abs(delta))}`}
-          valueColor={deltaColor}
+          variant={prevMonthData ? (delta > 0 ? 'up' : 'down') : 'default'}
           sub={
-            prevMonth.total
-              ? `${deltaSign}${((delta / prevMonth.total) * 100).toFixed(1)}%`
+            prevMonthData?.total
+              ? `${deltaSign}${((delta / prevMonthData.total) * 100).toFixed(1)}%`
               : '—'
           }
         />
@@ -400,6 +598,10 @@ export default function Dashboard() {
               monthlyData={monthlyData}
               activeCatIds={activeCatIds}
               catMap={catMap}
+              budgetMap={budgetMap}
+              noteMap={noteMap}
+              onCellClick={handleCellClick}
+              selectedMonthYm={selectedMonthData.ym}
             />
           ) : (
             <ResponsiveContainer width="100%" height={320}>
@@ -449,6 +651,36 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      <Popover
+        open={Boolean(noteAnchor)}
+        anchorEl={noteAnchor}
+        onClose={handleNoteClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Box sx={{ p: 2, width: 280 }}>
+          {noteTarget && (
+            <Typography variant="caption" color="text.secondary" display="block" mb={1} fontWeight={600}>
+              {catMap[noteTarget.catId]?.name} · {fmtMonthLabel(noteTarget.ym)}
+            </Typography>
+          )}
+          <TextField
+            multiline rows={3} fullWidth size="small"
+            placeholder="Add a note for this month…"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            autoFocus
+          />
+          <Stack direction="row" spacing={1} mt={1.5} justifyContent="flex-end">
+            {noteTarget && noteMap[`${noteTarget.catId}_${noteTarget.ym}`] && (
+              <Button size="small" color="error" onClick={handleNoteDelete}>Delete</Button>
+            )}
+            <Button size="small" onClick={handleNoteClose}>Cancel</Button>
+            <Button size="small" variant="contained" onClick={handleNoteSave} disabled={!noteText.trim()}>Save</Button>
+          </Stack>
+        </Box>
+      </Popover>
 
     </Box>
   )

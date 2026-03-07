@@ -96,18 +96,18 @@ Personal finance tracker. Single user (owner only). React + Vite frontend, Fireb
 ## Roadmap
 
 ### Phase 2 (in priority order)
-1. DataContext global cache — fetch once on login, instant page switches
-2. Settings > Cards (`/settings/cards`) — unlocks credit card dropdown in expense form + NL parsing
-3. Settings > Webhooks (`/settings/webhooks`) — Google Sheets pull for "Hers" loan balance
-4. Dashboard enhancements — month selector, spending by category chart, recent transactions widget
-5. Notifications / alerts — budget 80%/100% delivery (alertAt80/alertAt100 flags already in Firestore)
-6. Export — CSV/PDF of expenses
-7. Recurring auto-push — auto-push on due date instead of manual push drawer
-8. Multi-month budget tracking — historical budget vs actual
-9. EMIs page (`/emis`) — low priority
-10. Income history import — low priority (`cushion_income` is currently empty)
+1. Settings > Cards (`/settings/cards`) — unlocks credit card dropdown in expense form + NL parsing
+2. Settings > Webhooks (`/settings/webhooks`) — Google Sheets pull for "Hers" loan balance
+3. Dashboard enhancements — month selector, spending by category chart, recent transactions widget
+4. Notifications / alerts — budget 80%/100% delivery (alertAt80/alertAt100 flags already in Firestore)
+5. Export — CSV/PDF of expenses
+6. Recurring auto-push — auto-push on due date instead of manual push drawer
+7. Multi-month budget tracking — historical budget vs actual
+8. EMIs page (`/emis`) — low priority
+9. Income history import — low priority (`cushion_income` is currently empty)
 
 ### Phase 3
+- DataContext global cache (onSnapshot) — deferred deliberately; pages call db/index.js directly until then. Build at Phase 3 start before PWA work. At ~73 expenses/month, lag becomes noticeable around 2,500–3,500 docs (~mid-2027 to early 2028), which aligns with Phase 3 timing.
 - Mobile PWA (install to home screen, offline support)
 - Trip / vacation tagging (`tripId` already on expense docs, no UI yet)
 

@@ -15,6 +15,7 @@ import Income from './pages/Income.jsx'
 import IncomeForm from './pages/IncomeForm.jsx'
 import Recurring from './pages/Recurring.jsx'
 import Assets from './pages/Assets.jsx'
+import Cards from './pages/settings/Cards.jsx'
 
 /**
  * App -- root router.
@@ -66,7 +67,7 @@ export default function App() {
               <Route path="/loans" element={<Navigate to="/assets" replace />} />
               <Route path="/emis" element={<Placeholder name="EMIs" />} />
               <Route path="/settings/categories" element={<Categories />} />
-              <Route path="/settings/cards" element={<Placeholder name="Credit Cards" />} />
+              <Route path="/settings/cards" element={<Cards />} />
               <Route path="/settings/budgets" element={<BudgetSettings />} />
               <Route path="/settings/webhooks" element={<Placeholder name="Webhooks" />} />
               <Route path="/settings/account" element={<Placeholder name="Account" />} />
