@@ -64,6 +64,7 @@ export default function Cards() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [expanded, setExpanded] = useState(null)
 
   useEffect(() => {
     load()
@@ -164,12 +165,17 @@ export default function Cards() {
             const days = daysUntilCut(card.billingCycle)
             const daysColor = days <= 5 ? 'error' : days <= 10 ? 'warning' : 'success'
             const cardCats = getCategoriesForCard(card)
+            const isExpanded = expanded === card.id
             return (
-              <Box key={card.id}>
+              <Box
+                key={card.id}
+                onClick={() => setExpanded(isExpanded ? null : card.id)}
+                sx={{ cursor: 'pointer' }}
+              >
                 {idx > 0 && <Divider />}
                 <Stack direction="row" alignItems="center" sx={{ px: 2, py: 1.5 }} spacing={2}>
                   <Box sx={{ flex: 1 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" alignItems="center" spacing={1}>
                       <Typography variant="body2" fontWeight={500}>
                         {card.name}
                       </Typography>
@@ -188,27 +194,28 @@ export default function Cards() {
                         </Tooltip>
                       )}
                     </Stack>
-                    {cardCats.length > 0 && (
-                      <Stack direction="row" flexWrap="wrap" gap={0.5} mt={0.75}>
-                        {cardCats.map((cat) => (
-                          <Chip
-                            key={cat.id}
-                            label={`${cat.icon ?? ''} ${cat.name}`.trim()}
-                            size="small"
-                            variant="outlined"
-                            sx={{ fontSize: '0.6rem', height: 16, borderColor: cat.color ?? 'divider', color: cat.color ?? 'text.secondary' }}
-                          />
-                        ))}
-                      </Stack>
-                    )}
                   </Box>
-                  <IconButton size="small" onClick={() => openEdit(card)} aria-label="edit">
+                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); openEdit(card) }} aria-label="edit">
                     <EditOutlinedIcon fontSize="small" />
                   </IconButton>
-                  <IconButton size="small" color="error" onClick={() => handleDelete(card.id)} aria-label="delete">
+                  <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); handleDelete(card.id) }} aria-label="delete">
                     <DeleteOutlineIcon fontSize="small" />
                   </IconButton>
                 </Stack>
+                {isExpanded && cardCats.length > 0 && (
+                  <Box sx={{ px: 2, pb: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    {cardCats.map((cat) => (
+                      <Box key={cat.id} sx={{ mt: 1.5 }}>
+                        <Typography variant="caption" fontWeight={600}>
+                          {cat.icon} {cat.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+                          {cat.cardAdvice}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
               </Box>
             )
           })}
